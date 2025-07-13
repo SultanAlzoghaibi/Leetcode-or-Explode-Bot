@@ -6,8 +6,11 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
+
+const prefix = "lcc"
 
 func main() {
 	fmt.Println("Hello World")
@@ -22,11 +25,31 @@ func main() {
 	}
 	sess.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
+		/*
+			s = the current Discord session
+				•	This gives you access to:
+				•	your bot’s identity (s.State.User)
+				•	functions like s.ChannelMessageSend(...)
+				•	connected guilds, channels, members, etc.
+
+			m holds data like:
+				•	m.Content → the actual message text (string)
+				•	m.Author.ID → who sent it
+				•	m.ChannelID → where it was sent
+				•	m.GuildID
+		*/
+
+		args := strings.Split(m.Content, " ")
+
+		if args[0] != prefix {
 
 			return
 		}
 
-		if m.Content == "ping" {
+		if args[1] == "ping" {
 			s.ChannelMessageSend(m.ChannelID, "Pong!")
 		}
 	})

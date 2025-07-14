@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"encoding/json"
@@ -19,21 +19,16 @@ type Submission struct {
 	ProblemNumber int    `json:"problemNumber"` // ex: 1   (Two-Sum)
 	Difficulty    string `json:"difficulty"`    // "Easy" | "Medium" | "Hard"
 	SubmittedAt   string `json:"submittedAt"`   // ISO-8601 timestamp
+	// TODO: Add a confidence in REDOING SCORE
 }
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // or set specific origin
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	if r.Method == "OPTIONS" {
-		// Preflight request, just respond with OK
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	if r.Method != "POST" {
-		print("POST REQ ERROR???")
+		print("POST REQ invalid")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}

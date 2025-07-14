@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 const prefix = "lcc"
 
 func startDiscordBot() {
-	fmt.Println("Hello World")
 	godotenv.Load()
 	discToken := os.Getenv("DISCORD_TOKEN")
 
@@ -68,3 +67,5 @@ func startDiscordBot() {
 	<-sc
 
 }
+
+// TODO: Add a stat strater with telemary (aksii art wort comes to worse)

@@ -6,3 +6,26 @@ if (location.hostname.includes("leetcode.com")) {
     (document.head || document.documentElement).appendChild(script);
 }
 
+window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    if (event.data.type === "POST_SUBMISSION") {
+
+        console.log("contents when POST_SUBMSION")
+        try {
+            const package = {
+                type: "POST_SUBMISSION",
+                data: event.data.payload
+            }
+            console.log("Sending package:", JSON.stringify(package, null, 2));
+
+            const response = chrome.runtime.sendMessage(package);
+
+            console.log("we got passed tuntime.sendMessage", response)
+
+        } catch (e){
+            console.log( "erro in addEventListener()",e)
+        }
+
+    }
+});
+

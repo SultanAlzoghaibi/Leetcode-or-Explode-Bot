@@ -8,6 +8,41 @@ window.fetch =  async (...args) => {
     const clone = res.clone();
 
 
+    const globalVal = JSON.parse(localStorage.getItem("GLOBAL_DATA:value"));
+    const userId = globalVal?.userStatus?.username;
+
+    console.log("✅ Unique LeetCode User ID:", userId);
+
+    const difficultyElement = document.querySelector('div.text-difficulty-easy, div.text-difficulty-medium, div.text-difficulty-hard');
+    let difficulty;
+    if (difficultyElement) {
+        difficulty = difficultyElement.textContent.trim(); // "Easy", "Medium", or "Hard"
+        console.log("🧠 Difficulty:", difficulty);
+    }
+
+
+    // 1️⃣  Find the <a> element (adjust the selector if you need something stricter)
+    const anchor = document.querySelector(
+        'a[href^="/problems/"][href$="/"]'
+    );
+    let problemNumber;
+    if (anchor) {
+        /* 2️⃣  The textContent is like  "1. Two Sum"
+               – split on the first dot or run a regex. */
+        const match = anchor.textContent.match(/^(\d+)\s*\./);
+        if (match) {
+            problemNumber = parseInt(match[1], 10);
+            console.log("✅ Problem number:", problemNumber); // → 1
+        } else {
+            console.warn("Couldn’t parse a number from:", anchor.textContent);
+        }
+    } else {
+        console.warn("Anchor not found – check your selector.");
+    }
+
+
+
+
     const url = typeof args[0] === "string" ? args[0] : args[0].url;
 
     if (url.includes("/submissions/detail/") && url.includes("/check/")) {
@@ -21,30 +56,35 @@ window.fetch =  async (...args) => {
                 data.status_msg === "Accepted" &&
                 !data.submission_id.startsWith("runcode")
             ) {
+                const submittedAt = new Date(data.task_finish_time).toISOString();
+
                 const payload = {
-                    username: "sultan",
-                    submissionId: data.submission_id
+                    userID: userId,
+                    submissionId: data.submission_id,
+                    problemNumber: problemNumber,
+                    difficulty: difficulty,
+                    submittedAt: submittedAt
                 };
-                 fetch("https://5d138faa8a46.ngrok.app ", {
-                     method: "POST",
-                     headers: {
-                         "Content-Type": "application/json"
-                     }
-                     ,body: JSON.stringify(payload)
-                 }).then(res => res.json()).then(data => {
-                     console.log("✅ Backend acknowledged:", data);
-                 })
-                 .catch(err => {
-                     console.error("❌ Failed to send:", err);
-                 });
+                console.log("POST SEND!!", JSON.stringify(payload))
+
+                window.postMessage({
+                    type: "POST_SUBMISSION",
+                    payload: {
+                        userID: userId,
+                        submissionId: data.submission_id,
+                        problemNumber: problemNumber,
+                        difficulty: difficulty,
+                        submittedAt: submittedAt
+                    }
+                }, "*");
+
 
                 console.log("SUCCESSS ✅✅✅");
-            }
+                                                    }
 
         } catch (e) {
-            console.log("error lol")
+            console.log("error…", e)
         }
     }
     return res
 }
-

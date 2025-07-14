@@ -12,7 +12,7 @@ import (
 
 const prefix = "lcc"
 
-func startDiscordBot() {
+func StartDiscordBot() {
 	godotenv.Load()
 	discToken := os.Getenv("DISCORD_TOKEN")
 

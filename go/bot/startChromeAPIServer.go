@@ -1,9 +1,11 @@
 package bot
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -50,9 +52,20 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("✅ Submission received:\n%+v\n", submission)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Received"))
+
+	sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/mysql")
+	dsn := "root:yourPassword@tcp(127.0.0.1:3306)/leetcode_bot"
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	SetDB(db)
+
 }
 
-func startChromeAPIServer() {
+func StartChromeAPIServer() {
 	http.HandleFunc("/", lcSubmissionHandler)
 	http.ListenAndServe(":9100", nil)
 }

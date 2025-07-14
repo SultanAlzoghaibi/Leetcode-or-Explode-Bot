@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	go bot.startDiscordBot()
-	go bot.startChromeAPIServer()
+	go bot.StartDiscordBot()
+	go bot.StartChromeAPIServer()
 	time.Sleep(100 * time.Second) // Let goroutines print something
 
 }

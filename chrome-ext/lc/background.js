@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   console.log("📦 background: received POST_SUBMISSION", message.data);
 
-  fetch("https://5d138faa8a46.ngrok.app", {
+  fetch("https://localhost:9100", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.data)
@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ ok: true, data: body });
     })
     .catch(err => {
-      console.error("❌ Failed to send:", err);
+      console.error("❌ Failed to send:", err.message);
       sendResponse({ ok: false, error: err.message });
     });
 

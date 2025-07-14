@@ -4,9 +4,20 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 )
 
-func addToDB(db *sql.DB, subm Submission) {
+func submisionAddtoDB(db sql.DB, subm Submission) {
+
+	stmt, err := db.Prepare("INSERT INTO difficulty (submission) VALUES (?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+}
+
+func SetDB(db *sql.DB) {
 
 	if err := db.Ping(); err != nil {
 		if setupErr := setupDB(db); setupErr != nil {
@@ -14,6 +25,7 @@ func addToDB(db *sql.DB, subm Submission) {
 			// optionally log or handle setup error
 		}
 	}
+	fmt.Println("WE Are running the DB")
 }
 
 func setupDB(db *sql.DB) error {

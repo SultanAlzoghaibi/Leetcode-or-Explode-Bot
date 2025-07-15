@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"Leetcode-or-Explode-Bot/db"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -53,19 +54,88 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Received"))
 
-	sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/mysql")
-	dsn := "root:yourPassword@tcp(127.0.0.1:3306)/leetcode_bot"
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// DB part
+	database := db.DB
 
-	SetDB(db)
+	subExists, err := tableExists(database, "submissions")
+	userExists, err := tableExists(database, "users")
+
+	if !subExists || !userExists {
+		err := db.SetupDB(database)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	fmt.Println("before")
 
 }
 
 func StartChromeAPIServer() {
 	http.HandleFunc("/", lcSubmissionHandler)
 	http.ListenAndServe(":9100", nil)
+}
+
+func tableExists(db *sql.DB, tableName string) (bool, error) {
+
+	query := `	SELECT COUNT(*) 
+				FROM INFORMATION_SCHEMA.TABLES 
+				WHERE table_schema = DATABASE() 
+				  AND table_name = ?`
+	var count int
+	err := db.QueryRow(query, tableName).Scan(&count)
+	if err != nil {
+		fmt.Println("error in counting DBS")
+		return false, err
+	}
+
+	if count > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
+func printDB(db *sql.DB) {
+	// --- Print Users ---
+	query1 := `SELECT user_id, discord_user_id, discord_server_id, is_admin, monthly_leetcode, status FROM users`
+	uRows, err := db.Query(query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer uRows.Close()
+
+	fmt.Println("\nUsers:")
+	for uRows.Next() {
+		var userID, discordUserID, discordServerID, status string
+		var isAdmin bool
+		var monthlyLeetcode uint8
+
+		err := uRows.Scan(&userID, &discordUserID, &discordServerID, &isAdmin, &monthlyLeetcode, &status)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("- %s | %s | %s | Admin: %v | Monthly: %d | Status: %s\n",
+			userID, discordUserID, discordServerID, isAdmin, monthlyLeetcode, status)
+	}
+	// --- Print Submissions ---
+	query2 := `SELECT id, username, problem, score, timestamp FROM submissions`
+	sRows, err := db.Query(query2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sRows.Close()
+
+	fmt.Println("\nSubmissions:")
+	for sRows.Next() {
+		var id int
+		var username, problem string
+		var score int
+		var timestamp string // you can also use time.Time if your column is DATETIME
+
+		err := sRows.Scan(&id, &username, &problem, &score, &timestamp)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("- #%d | %s | %s | Score: %d | %s\n", id, username, problem, score, timestamp)
+	}
 }

@@ -2,12 +2,17 @@ package main
 
 import (
 	"Leetcode-or-Explode-Bot/bot"
-	"time"
+	"Leetcode-or-Explode-Bot/db"
+	"database/sql"
 )
 
+var Conn *sql.DB
+
 func main() {
+
+	db.Init()
 	go bot.StartDiscordBot()
 	go bot.StartChromeAPIServer()
-	time.Sleep(100 * time.Second) // Let goroutines print something
 
+	select {} // cleaner than Sleep for long-running goroutines
 }

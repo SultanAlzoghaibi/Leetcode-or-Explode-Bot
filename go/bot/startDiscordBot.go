@@ -1,9 +1,11 @@
 package bot
 
 import (
+	"Leetcode-or-Explode-Bot/db"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -11,6 +13,9 @@ import (
 )
 
 const prefix = "lcc"
+
+type Command struct {
+}
 
 func StartDiscordBot() {
 	godotenv.Load()
@@ -22,17 +27,13 @@ func StartDiscordBot() {
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
 	}
-	sess.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		if m.Author.ID == s.State.User.ID {
-			return
-		}
+	sess.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		/*
-			s = the current Discord session
-				•	This gives you access to:
-				•	your bot’s identity (s.State.User)
-				•	functions like s.ChannelMessageSend(...)
-				•	connected guilds, channels, members, etc.
+			userID := i.Member.User.ID
+			guildID := i.GuildID
+			channelID := i.ChannelID
+			lcUsername := i.ApplicationCommandData().Options[0].StringValue()
 
 			m holds data like:
 				•	m.Content → the actual message text (string)
@@ -41,21 +42,118 @@ func StartDiscordBot() {
 				•	m.GuildID
 		*/
 
-		args := strings.Split(m.Content, " ")
+		switch i.ApplicationCommandData().Name {
 
-		if args[0] != prefix {
+		case "ping":
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "pong",
+				},
+			})
 
-			return
+		case "signup":
+			fmt.Println("signup")
+
+			lcUsername := i.ApplicationCommandData().Options[0].StringValue()
+
+			if db.DoesExist(db.DB, "users", "user_id", lcUsername) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "This user already exists: " + lcUsername,
+					},
+				})
+				return
+			}
+
+			err := db.AddUser(db.DB, lcUsername, false, 0,
+				"DEFAULT", i.Member.User.ID, i.GuildID)
+			if err != nil {
+				if strings.Contains(err.Error(), "Error 1062") {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "⚠️ You've already signed up!",
+							Flags:   1 << 6, // ephemeral message
+						},
+					})
+					return
+				}
+				fmt.Println("❌ Failed to add user:", err)
+			}
+
+			db.PrintDB(db.DB)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "✅ Signed up as " + lcUsername,
+				},
+			})
+
+		case "delete":
+			fmt.Println("delete")
+			err = db.DeleteRow(db.DB, "users", "discord_user_id", i.Member.User.ID)
+			if err != nil {
+				log.Printf("❌ Delete failed: %v", err)
+				return
+			}
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "User deleted! you can now re-signed up!",
+				},
+			})
+
 		}
 
-		if args[1] == "ping" {
-			s.ChannelMessageSend(m.ChannelID, "Pong!")
-		}
+		// TODO: Add a lockup to leetcode site (or api) to see if this user exists or not
 	})
 
 	sess.Identify.Intents = discordgo.IntentsGuildMessages
 
 	err = sess.Open()
+	// Register slash commands -------------------------------
+	commands := []*discordgo.ApplicationCommand{
+		{
+			Name:        "ping",
+			Description: "Replies with pong",
+		},
+		{
+			Name:        "signup",
+			Description: "Sign up with your LeetCode username",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "userid",
+					Description: "Your LeetCode user name",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "delete",
+			Description: "Delete your self from the database",
+		},
+	}
+
+	for _, cmd := range commands {
+		_, err := sess.ApplicationCommandCreate(sess.State.User.ID, "1392352918425960509", cmd)
+		if err != nil {
+			fmt.Printf("❌ Cannot create slash command '%s': %v\n", cmd.Name, err)
+		}
+	}
+	// --------------------- End of commands -----------------------
+
+	err = sess.GuildMemberNickname("1392352918425960509", "@me", "Leetcode Warden 😭")
+	if err != nil {
+		fmt.Println("Error creating nickname", err)
+	}
+
+	if err != nil {
+		fmt.Println("❌ Failed to update nickname:", err)
+	}
 	if err != nil {
 		fmt.Println("Error opening connection,", err)
 	}

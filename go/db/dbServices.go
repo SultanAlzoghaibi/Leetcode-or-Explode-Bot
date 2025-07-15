@@ -48,7 +48,6 @@ func DeleteRow(db *sql.DB, table, column, key string) {
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", table, column)
 
 	stmt, err := db.Prepare(query)
-	return err
 	if err != nil {
 		log.Printf("❌ Prepare delete failed: %v", err)
 		return

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -94,11 +93,8 @@ func StartDiscordBot() {
 
 		case "delete":
 			fmt.Println("delete")
-			err = db.DeleteRow(db.DB, "users", "discord_user_id", i.Member.User.ID)
-			if err != nil {
-				log.Printf("❌ Delete failed: %v", err)
-				return
-			}
+			db.DeleteRow(db.DB, "users", "discord_user_id", i.Member.User.ID)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{

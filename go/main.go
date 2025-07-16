@@ -11,7 +11,7 @@ var Conn *sql.DB
 func main() {
 
 	db.Init()
-	go bot.StartDiscordBot()
+	go bot.StartDiscordBot() // requires wifie
 	go bot.StartChromeAPIServer()
 
 	select {} // cleaner than Sleep for long-running goroutines

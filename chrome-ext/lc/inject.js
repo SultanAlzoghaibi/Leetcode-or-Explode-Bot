@@ -10,6 +10,8 @@ window.fetch =  async (...args) => {
 
     const globalVal = JSON.parse(localStorage.getItem("GLOBAL_DATA:value"));
     const userId = globalVal?.userStatus?.username;
+    const topics = extractTopics();
+    console.log(topics.toString())
 
     console.log("✅ Unique LeetCode User ID:", userId);
 
@@ -41,6 +43,12 @@ window.fetch =  async (...args) => {
     }
 
 
+    function extractTopics() {
+        const topicLinks = document.querySelectorAll('a[href^="/tag/"]');
+        const topics = Array.from(topicLinks).map(link => link.textContent.trim());
+        console.log("📚 Parsed topics:", topics);
+        return topics;
+    }
 
 
     const url = typeof args[0] === "string" ? args[0] : args[0].url;
@@ -64,6 +72,7 @@ window.fetch =  async (...args) => {
                     problemNumber: problemNumber,
                     difficulty: difficulty,
                     submittedAt: submittedAt
+
                 };
 
                 console.log("🕒 Waiting 5 seconds before sending POST_SUBMISSION...");
@@ -110,6 +119,18 @@ window.fetch =  async (...args) => {
                             <option value="4">4 – Confident redo</option>
                             <option value="5">5 – Perfectly repeatable</option>
                         </select>
+                        <label for="duration" style="font-weight: 500;">Solve Duration (minutes):</label>
+                        <input id="duration" type="number" min="0" max="255" placeholder="Enter duration (0–255)" style="
+                            width: 100%;
+                            margin-bottom: 12px;
+                            padding: 6px;
+                            background-color: #2a2a2a;
+                            color: white;
+                            border: 1px solid #444;
+                            border-radius: 5px;
+                        "/>
+                        <div id="durationError" style="color: red; display: none; margin-bottom: 8px;"></div>
+                        <label style="font-weight: 500;">Notes:</label>
                         <textarea id="notes" placeholder="Add notes here..." rows="3" maxlength="1000"
                          style="
                             width: 100%;
@@ -121,6 +142,17 @@ window.fetch =  async (...args) => {
                             margin-bottom: 12px;
                             resize: none;
                         "></textarea>
+                        <div style="margin-bottom: 12px;">
+                          <label style="font-weight: 500;">Topics (select all that apply):</label>
+                          <div id="topicsContainer" style="
+                              display: flex;
+                              flex-wrap: wrap;
+                              gap: 6px;
+                              margin-top: 6px;
+                          ">
+                            <!-- JS will insert topics here -->
+                          </div>
+                        </div>
                         <button id="submitPopup" style="
                             background-color: #ffa500;
                             color: black;
@@ -141,16 +173,57 @@ window.fetch =  async (...args) => {
 
                 document.body.appendChild(bubble);
 
+                const container = document.getElementById("topicsContainer");
+                topics.forEach(topic => {
+                    const label = document.createElement("label");
+                    label.style.cssText = `
+                        display: flex;
+                        align-items: center;
+                        background: #333;
+                        color: white;
+                        border-radius: 6px;
+                        padding: 6px 10px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    `;
+
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.value = topic;
+                    checkbox.style.marginRight = "6px";
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(topic));
+                    container.appendChild(label);
+                });
+
                 document.getElementById("submitPopup").onclick = () => {
                     clearTimeout(timeoutId); // cancel fallback
 
                     const confidenceScore = parseInt(document.getElementById("confidence").value);
                     const notes = document.getElementById("notes").value;
 
+                    const durationInput = document.getElementById("duration").value.trim();
+                    const duration = parseInt(durationInput);
+                    const errorBox = document.getElementById("durationError");
+
+                    if (duration < 0 || duration > 255) {
+                        errorBox.textContent = "❌ Please enter a valid duration between 0 and 255.";
+                        errorBox.style.display = "block";
+                        return;
+                    } else {
+                        errorBox.style.display = "none";
+                    }
+
+                    const selectedTopics = Array.from(document.querySelectorAll('#topicsContainer input:checked'))
+                        .map(cb => cb.value);
+
                     const fullPayload = {
                         ...payload,
                         confidenceScore,
-                        notes
+                        notes,
+                        duration,
+                        topics: selectedTopics
                     };
 
                     console.log("⚡ User submitted popup. Sending POST_SUBMISSION with extra fields.");

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type Server struct {
@@ -16,15 +17,44 @@ type Server struct {
 type Message struct {
 	Text string `json:"text"`
 }
+
+type Difficulty int8
+
+const (
+	Easy Difficulty = iota
+	Medium
+	Hard
+)
+
 type Submission struct {
-	UserID          string `json:"userID"`        // ex: "7syRMHE2MD"
-	SubmissionID    string `json:"submissionId"`  // ex: "1696788684"
-	ProblemNumber   uint16 `json:"problemNumber"` // ex: 1   (Two-Sum)
-	Difficulty      string `json:"difficulty"`    // "Easy" | "Medium" | "Hard"
-	SubmittedAt     string `json:"submittedAt"`   // ISO-8601 timestamp
-	ConfidenceScore uint8  `json:"confidenceScore"`
-	Notes           string `json:"notes"`
-	// TODO: Add a confidence in REDOING SCOREs
+	SubmissionID    string     `json:"submissionId"`  // ex: "1696788684"
+	ProblemNumber   int        `json:"problemNumber"` // ex: 1   (Two-Sum)
+	UserID          string     `json:"userID"`        // ex: "7syRMHE2MD"
+	Difficulty      Difficulty `json:"difficulty"`    // "Easy" | "Medium" | "Hard"
+	SubmittedAt     string     `json:"submittedAt"`   // ISO-8601 timestamp
+	ConfidenceScore uint8      `json:"confidenceScore"`
+	Notes           string     `json:"notes"`
+	SolveTime       uint8      `json:"solveTime"`
+	Topics          []string   `json:"topics"`
+}
+
+func (d *Difficulty) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	switch strings.ToUpper(s) {
+	case "EASY":
+		*d = Easy
+	case "MEDIUM":
+		*d = Medium
+	case "HARD":
+		*d = Hard
+	default:
+		return fmt.Errorf("invalid difficulty: %s", s)
+	}
+	return nil
 }
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +78,11 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(string(body))
 
 	var submission Submission
+
 	err = json.Unmarshal(body, &submission)
+
 	if err != nil {
+		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -75,6 +108,16 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 	}
+	db.AddSubm(database,
+		submission.SubmissionID,
+		submission.ProblemNumber,
+		db.Difficulty(submission.Difficulty),
+		submission.ConfidenceScore,
+		submission.SubmittedAt,
+		submission.Topics,
+		submission.SolveTime,
+		submission.Notes,
+		submission.UserID)
 
 	printDB(database)
 }
@@ -127,7 +170,7 @@ func printDB(db *sql.DB) {
 	}
 
 	// --- Print Submissions ---
-	query2 := `SELECT id, problemNumber, confidenceScore, timestamp, userID, notes FROM submissions`
+	query2 := `SELECT submission_id, problem_number, confidence_score, timestamp, notes, user_id FROM submissions`
 	sRows, err := db.Query(query2)
 	if err != nil {
 		log.Fatal(err)
@@ -136,7 +179,7 @@ func printDB(db *sql.DB) {
 
 	fmt.Println("\nSubmissions:")
 	for sRows.Next() {
-		var id int
+		var id string
 		var problemNumber uint16
 		var confidenceScore uint8
 		var submittedAt, userID, notes string

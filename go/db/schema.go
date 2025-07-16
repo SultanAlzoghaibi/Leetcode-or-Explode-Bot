@@ -6,13 +6,16 @@ func SetupDB(db *sql.DB) error {
 
 	submisionTable := `
 	CREATE TABLE IF NOT EXISTS submissions (
-		id VARCHAR(32) PRIMARY KEY,
-		problemNumber INT,
-		confidenceScore TINYINT,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-		userID VARCHAR(32),
+	    submission_id VARCHAR(32) PRIMARY KEY,
+	    problem_number INT,
+	    difficulty ENUM('EASY', 'MEDIUM', 'HARD'),
+	    confidence_score TINYINT,
+	    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+	    topics TEXT, -- array of strings
+	    solve_time TINYINT UNSIGNED,
 	    notes TEXT,
-		FOREIGN KEY (userID) REFERENCES users(user_id)
+	    user_id VARCHAR(32),
+	    FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);`
 	userTable := `
 CREATE TABLE IF NOT EXISTS users (

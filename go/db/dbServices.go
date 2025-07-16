@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -32,7 +33,7 @@ func AddUser(db *sql.DB, userID string, isAdmin bool, monthlyLeetcode uint8, sta
         VALUES (?, ?, ?, ?, ?, ?)
     `)
 	if err != nil {
-		return fmt.Errorf("prepare failed: %v", err)
+		return fmt.Errorf("Adduser perspare user failde: %v", err)
 	}
 	defer stmt.Close()
 
@@ -44,6 +45,68 @@ func AddUser(db *sql.DB, userID string, isAdmin bool, monthlyLeetcode uint8, sta
 	return nil
 }
 
+type Difficulty int8
+
+const (
+	Easy Difficulty = iota
+	Medium
+	Hard
+)
+
+func AddSubm(db *sql.DB,
+	submissionID string,
+	problemNumber int,
+	difficulty Difficulty,
+	confidenceScore uint8,
+	timestamp string,
+	topics []string,
+	solveTime uint8,
+	notes string,
+	userID string,
+) error {
+	topicsJSON, err := json.Marshal(topics)
+	if err != nil {
+		return fmt.Errorf("json marshal failed: %v", err)
+	}
+
+	stmt, err := db.Prepare(`
+        INSERT INTO submissions (submission_id, 
+                                 problem_number, 
+                                 difficulty, 
+                                 confidence_score, 
+                                 timestamp, 
+                                 topics,
+                                 solve_time,
+                                 notes, 
+                                 user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+
+	if err != nil {
+		fmt.Println("Addsubm perspare submission failde: %v", err)
+		return fmt.Errorf("execution failed: %v", err)
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(submissionID,
+		problemNumber,
+		difficulty,
+		confidenceScore,
+		timestamp,
+		string(topicsJSON),
+		solveTime,
+		notes,
+		userID)
+	if err != nil {
+		fmt.Println("Addsubm exucute submission failde: %v", err)
+		return fmt.Errorf("execution failed: %v", err)
+	}
+	log.Printf("✅ Inserted submission %s for user %s", submissionID, userID)
+	return nil
+}
+
+func RemoveSubm(db *sql.DB, submissionID string, userID string) error {
+	return nil
+}
 func DeleteRow(db *sql.DB, table, column, key string) {
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", table, column)
 

@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   console.log("📦 background: received POST_SUBMISSION", message.data);
 
-  fetch("https://5d138faa8a46.ngrok.app", {
+  fetch("https://44a7d6a27a27.ngrok.app", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.data)

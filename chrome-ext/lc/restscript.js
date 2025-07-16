@@ -6,7 +6,9 @@ const data = {
     submissionId: "abc123",
     problemNumber: 1,
     difficulty: "Easy",
-    submittedAt: new Date().toISOString()
+    submittedAt: new Date().toISOString(),
+    confidenceScore: 3,               // Add this
+    notes: "Sample note for testing"  // And this
 };
 
 const req = http.request(

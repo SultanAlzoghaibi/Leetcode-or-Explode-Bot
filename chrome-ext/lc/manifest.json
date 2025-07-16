@@ -2,7 +2,7 @@
   "name": "LC Submit Hook",
   "version": "0.1.0",
   "manifest_version": 3,
-  "permissions": ["declarativeNetRequest", "storage", "tabs", "alarms"],
+  "permissions": ["declarativeNetRequest", "storage", "tabs", "alarms", "scripting"],
   "host_permissions": ["https://leetcode.com/*", "https://*.ngrok.app/"],
   "background": {
     "service_worker": "background.js"
@@ -16,7 +16,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["inject.js"],
+      "resources": ["inject.js", "injectBubble.js"],
       "matches": ["https://leetcode.com/*"]
     }
   ],

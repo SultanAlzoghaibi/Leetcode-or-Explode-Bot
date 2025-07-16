@@ -11,6 +11,7 @@ func SetupDB(db *sql.DB) error {
 		confidenceScore TINYINT,
 		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
 		userID VARCHAR(32),
+	    notes TEXT,
 		FOREIGN KEY (userID) REFERENCES users(user_id)
 	);`
 	userTable := `

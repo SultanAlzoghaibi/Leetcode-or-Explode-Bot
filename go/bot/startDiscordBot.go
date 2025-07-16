@@ -47,7 +47,7 @@ func StartDiscordBot() {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "pong",
+					Content: "You best start leetcoding soon... or else 😡",
 				},
 			})
 

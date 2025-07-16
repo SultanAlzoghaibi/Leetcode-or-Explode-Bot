@@ -7,6 +7,7 @@ if (location.hostname.includes("leetcode.com")) {
 }
 
 window.addEventListener("message", (event) => {
+    console.log("RAN EVENT LISTEN IN COSOLE.js")
     if (event.source !== window) return;
     if (event.data.type === "POST_SUBMISSION") {
 
@@ -20,7 +21,7 @@ window.addEventListener("message", (event) => {
 
             const response = chrome.runtime.sendMessage(package);
 
-            console.log("we got passed tuntime.sendMessage", response)
+            console.log("we got passed Runtime.sendMessage", response)
 
         } catch (e){
             console.log( "erro in addEventListener()",e)

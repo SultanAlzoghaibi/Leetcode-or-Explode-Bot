@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   console.log("📦 background: received POST_SUBMISSION", message.data);
 
-  fetch("https://localhost:9100", {
+  fetch("https://5d138faa8a46.ngrok.app", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.data)
@@ -32,3 +32,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Return true so the response channel stays open until sendResponse runs
   return true;
 });
+

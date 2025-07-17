@@ -45,8 +45,13 @@ func addtoSheets(subm Submission) {
 		subm.Difficulty.String(),
 		subm.ConfidenceScore,
 
-		subm.SubmittedAt[:10],
-		subm.SolveTime,
+		fmt.Sprintf(`=TEXT(DATEVALUE("%s"), "yyyy-mm-dd")`, subm.SubmittedAt[:10]),
+		fmt.Sprintf("%dmin%s", subm.SolveTime, func() string {
+			if subm.SolveTime >= 60 {
+				return fmt.Sprintf(" (%dh %dmin)", subm.SolveTime/60, subm.SolveTime%60)
+			}
+			return ""
+		}()),
 		string(topicsJSON),
 		subm.Notes,
 	}

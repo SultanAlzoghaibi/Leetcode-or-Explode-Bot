@@ -25,6 +25,7 @@ func SetupDB(db *sql.DB) error {
 CREATE TABLE IF NOT EXISTS users (
     user_id           VARCHAR(32) PRIMARY KEY,
     discord_user_id   VARCHAR(32) NOT NULL UNIQUE,
+    username          VARCHAR(64) NOT NULL,
     discord_server_id VARCHAR(32) NOT NULL,
     is_admin          BOOLEAN,
     monthly_leetcode  TINYINT UNSIGNED,
@@ -87,7 +88,10 @@ func printDB(db *sql.DB) {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("- %s | %s | %s | Conf: %d | Time: %dmin | %s | Topics: %s | Notes: %s\n",
-			id, userID, problemName, confidenceScore, solveTime, submittedAt, topics, notes)
+		hours := solveTime / 60
+		minutes := solveTime % 60
+		formattedTime := fmt.Sprintf("%dmin (%dh %dmin)", solveTime, hours, minutes)
+		fmt.Printf("- %s | %s | %s | Conf: %d | Time: %s | %s | Topics: %s | Notes: %s\n",
+			id, userID, problemName, confidenceScore, formattedTime, submittedAt, topics, notes)
 	}
 }

@@ -21,13 +21,15 @@ func StartDiscordBot() {
 	discToken := os.Getenv("DISCORD_TOKEN")
 
 	fmt.Println("token:" + discToken)
-	sess, err := discordgo.New("Bot " + discToken)
+	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
+
+	go dailyposts(sess)
 
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
 	}
 	sess.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
+		//todo: verify that this thread depedan ton the seshpoing being active
 		/*
 			userID := i.Member.User.ID
 			guildID := i.GuildID
@@ -66,8 +68,14 @@ func StartDiscordBot() {
 				return
 			}
 
-			err := db.AddUser(db.DB, lcUsername, false, 0,
-				"DEFAULT", i.Member.User.ID, i.GuildID)
+			err := db.AddUser(db.DB,
+				lcUsername,
+				false,
+				0,
+				"DEFAULT",
+				i.Member.User.ID,
+				i.GuildID,
+				i.Member.User.Username)
 			if err != nil {
 				if strings.Contains(err.Error(), "Error 1062") {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -161,5 +169,7 @@ func StartDiscordBot() {
 	<-sc
 
 }
+
+//todo: fix bug on first submission being error every time
 
 // TODO: Add a stat strater with telemary (aksii art wort comes to worse)

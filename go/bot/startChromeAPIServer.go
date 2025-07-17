@@ -130,6 +130,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 func StartChromeAPIServer() {
 	http.HandleFunc("/", lcSubmissionHandler)
 	http.ListenAndServe(":9100", nil)
+
 }
 
 func tableExists(db *sql.DB, tableName string) (bool, error) {

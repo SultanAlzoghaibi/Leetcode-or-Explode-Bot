@@ -37,15 +37,15 @@ func AddUser(db *sql.DB,
 	username string) error {
 
 	stmt, err := db.Prepare(`
-        INSERT INTO users (user_id, is_admin, monthly_leetcode, status, discord_user_id, discord_server_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO users (user_id, discord_user_id, username, discord_server_id, is_admin, monthly_leetcode, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `)
 	if err != nil {
 		return fmt.Errorf("Adduser perspare user failde: %v", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(userID, isAdmin, monthlyLeetcode, status, discordUserID, discordServerID)
+	_, err = stmt.Exec(userID, discordUserID, username, discordServerID, isAdmin, monthlyLeetcode, status)
 	if err != nil {
 		return fmt.Errorf("execution failed: %v", err)
 	}
@@ -212,10 +212,10 @@ func GetAllDailyLeets(db *sql.DB, date string) string {
 
 	for rows.Next() {
 		var userID string
-		var difficulty int
+		var difficultyStr string
 		var count int
 
-		if err := rows.Scan(&userID, &difficulty, &count); err != nil {
+		if err := rows.Scan(&userID, &difficultyStr, &count); err != nil {
 			log.Fatalf("❌ Row scan failed: %v", err)
 		}
 
@@ -223,18 +223,20 @@ func GetAllDailyLeets(db *sql.DB, date string) string {
 			userStats[userID] = &stat{}
 		}
 
-		switch difficulty {
-		case 0:
+		switch strings.ToUpper(difficultyStr) {
+		case "EASY":
 			userStats[userID].Easy += count
-		case 1:
+		case "MEDIUM":
 			userStats[userID].Medium += count
-		case 2:
+		case "HARD":
 			userStats[userID].Hard += count
+		default:
+			log.Printf("⚠️ Unknown difficulty: %s", difficultyStr)
 		}
 	}
 
 	var res strings.Builder
-	res.WriteString("📊 Leetcode stats for ")
+	res.WriteString("📊 Leetcode stats tfor ")
 	res.WriteString(date)
 	res.WriteString("\n")
 
@@ -310,13 +312,13 @@ type LeaderEntry struct {
 }
 
 func GetLeaderboard(db *sql.DB) []LeaderEntry {
-
-	query := `SELECT monthly_leetcode, username  FROM users IN ORDER BY monthly_leetcode`
+	query := `SELECT username, monthly_leetcode FROM users ORDER BY monthly_leetcode DESC`
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
+
 	rows, err := stmt.Query()
 	if err != nil {
 		log.Fatal(err)
@@ -325,19 +327,18 @@ func GetLeaderboard(db *sql.DB) []LeaderEntry {
 
 	var leaderboard []LeaderEntry
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 3 && rows.Next(); i++ {
 		var username string
 		var moLCAmount uint8
 		err = rows.Scan(&username, &moLCAmount)
 		if err != nil {
 			log.Fatal(err)
 		}
-		var l LeaderEntry
-		l.Username = username
-		l.MoLCAmount = moLCAmount
-		leaderboard = append(leaderboard, l)
-
+		leaderboard = append(leaderboard, LeaderEntry{
+			Username:   username,
+			MoLCAmount: moLCAmount,
+		})
 	}
-	return leaderboard
 
+	return leaderboard
 }

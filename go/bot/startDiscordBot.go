@@ -90,7 +90,7 @@ func StartDiscordBot() {
 				fmt.Println("❌ Failed to add user:", err)
 			}
 
-			db.PrintDB(db.DB)
+			//
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

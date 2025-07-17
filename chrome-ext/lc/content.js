@@ -19,9 +19,9 @@ window.addEventListener("message", (event) => {
             }
             console.log("Sending package:", JSON.stringify(package, null, 2));
 
-            const response = chrome.runtime.sendMessage(package);
-
-            console.log("we got passed Runtime.sendMessage", response)
+            chrome.runtime.sendMessage(package, (response) => {
+                console.log("✅ we got passed Runtime.sendMessage", response); // move it here
+            });
 
         } catch (e){
             console.log( "erro in addEventListener()",e)

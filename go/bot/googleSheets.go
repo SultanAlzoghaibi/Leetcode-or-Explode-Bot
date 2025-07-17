@@ -3,7 +3,6 @@ package bot
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -15,6 +14,15 @@ import (
 // Define spreadsheetID and writeRange globally or pass as needed.
 var spreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ" // TODO: replace with your spreadsheet ID
 var writeRange = "Sheet1!A1:I"                                     // TODO: replace with your target range
+
+var scoreMap = map[int8]string{
+	0: "0 – No clue",
+	1: "1 – Struggle to repeat",
+	2: "2 – Might redo poorly",
+	3: "3 – Could redo maybe",
+	4: "4 – Confident redo",
+	5: "5 – Perfectly repeatable",
+}
 
 func addtoSheets(subm Submission) {
 	ctx := context.Background()
@@ -33,9 +41,6 @@ func addtoSheets(subm Submission) {
 
 	// --- Set data validation for "Difficulty" column (column B) ---
 
-	// Marshal topics to JSON string
-	topicsJSON, _ := json.Marshal(subm.Topics)
-
 	// Create the row to append
 	row := []interface{}{
 		fmt.Sprintf(`=HYPERLINK("https://leetcode.com/problems/%s/", "%s")`,
@@ -43,16 +48,11 @@ func addtoSheets(subm Submission) {
 			subm.ProblemName),
 
 		subm.Difficulty.String(),
-		subm.ConfidenceScore,
+		scoreMap[int8(subm.ConfidenceScore)],
 
-		fmt.Sprintf(`=TEXT(DATEVALUE("%s"), "yyyy-mm-dd")`, subm.SubmittedAt[:10]),
-		fmt.Sprintf("%dmin%s", subm.SolveTime, func() string {
-			if subm.SolveTime >= 60 {
-				return fmt.Sprintf(" (%dh %dmin)", subm.SolveTime/60, subm.SolveTime%60)
-			}
-			return ""
-		}()),
-		string(topicsJSON),
+		subm.SubmittedAt[:10],
+		subm.SolveTime,
+		strings.Join(subm.Topics, ", "),
 		subm.Notes,
 	}
 
@@ -165,224 +165,86 @@ func setDifficultyValidationAndFormatting(srv *sheets.Service, spreadsheetID str
 }
 
 func setConfidenceValidationAndFormatting(srv *sheets.Service, spreadsheetID string) {
-	_, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
-		Requests: []*sheets.Request{
-			// Set data validation
-			{
-				SetDataValidation: &sheets.SetDataValidationRequest{
-					Range: &sheets.GridRange{
-						SheetId:          0, // Update if not the first sheet
-						StartColumnIndex: 2,
-						EndColumnIndex:   3,
-					},
-					Rule: &sheets.DataValidationRule{
-						Condition: &sheets.BooleanCondition{
-							Type: "ONE_OF_LIST",
-							Values: []*sheets.ConditionValue{
-								{UserEnteredValue: "0 – No clue"},
-								{UserEnteredValue: "1 – Struggle to repeat"},
-								{UserEnteredValue: "2 – Might redo poorly"},
-								{UserEnteredValue: "3 – Could redo maybe"},
-								{UserEnteredValue: "4 – Confident redo"},
-								{UserEnteredValue: "5 – Perfectly repeatable"},
-							},
-						},
-						Strict:       true,
-						ShowCustomUi: true,
-					},
-				},
+	labels := []string{
+		"0 – No clue",
+		"1 – Struggle to repeat",
+		"2 – Might redo poorly",
+		"3 – Could redo maybe",
+		"4 – Confident redo",
+		"5 – Perfectly repeatable",
+	}
+
+	colors := []*sheets.Color{
+		{Red: 0.8, Green: 0.0, Blue: 0.0, Alpha: 1.0}, // red
+		{Red: 0.9, Green: 0.3, Blue: 0.0, Alpha: 1.0}, // red-orange
+		{Red: 1.0, Green: 0.6, Blue: 0.0, Alpha: 1.0}, // orange
+		{Red: 1.0, Green: 0.8, Blue: 0.0, Alpha: 1.0}, // yellow
+		{Red: 0.6, Green: 1.0, Blue: 0.0, Alpha: 1.0}, // light green
+		{Red: 0.0, Green: 0.8, Blue: 0.0, Alpha: 1.0}, // green
+	}
+
+	var requests []*sheets.Request
+
+	// Add Data Validation
+	validationValues := make([]*sheets.ConditionValue, len(labels))
+	for i, label := range labels {
+		validationValues[i] = &sheets.ConditionValue{UserEnteredValue: label}
+	}
+	requests = append(requests, &sheets.Request{
+		SetDataValidation: &sheets.SetDataValidationRequest{
+			Range: &sheets.GridRange{
+				SheetId:          0,
+				StartColumnIndex: 2,
+				EndColumnIndex:   3,
 			},
-			// Add conditional formatting for "0 – No clue" (Dark Red)
-			{
-				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
-					Rule: &sheets.ConditionalFormatRule{
-						Ranges: []*sheets.GridRange{
-							{
-								SheetId:          0,
-								StartColumnIndex: 2,
-								EndColumnIndex:   3,
-							},
-						},
-						BooleanRule: &sheets.BooleanRule{
-							Condition: &sheets.BooleanCondition{
-								Type: "TEXT_EQ",
-								Values: []*sheets.ConditionValue{
-									{UserEnteredValue: "0 – No clue"},
-								},
-							},
-							Format: &sheets.CellFormat{
-								BackgroundColor: &sheets.Color{
-									Red:   0.8,
-									Green: 0.0,
-									Blue:  0.0,
-									Alpha: 1.0,
-								},
-							},
-						},
-					},
-					Index: 0,
+			Rule: &sheets.DataValidationRule{
+				Condition: &sheets.BooleanCondition{
+					Type:   "ONE_OF_LIST",
+					Values: validationValues,
 				},
-			},
-			// Add conditional formatting for "1 – Struggle to repeat" (Red-Orange)
-			{
-				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
-					Rule: &sheets.ConditionalFormatRule{
-						Ranges: []*sheets.GridRange{
-							{
-								SheetId:          0,
-								StartColumnIndex: 2,
-								EndColumnIndex:   3,
-							},
-						},
-						BooleanRule: &sheets.BooleanRule{
-							Condition: &sheets.BooleanCondition{
-								Type: "TEXT_EQ",
-								Values: []*sheets.ConditionValue{
-									{UserEnteredValue: "1 – Struggle to repeat"},
-								},
-							},
-							Format: &sheets.CellFormat{
-								BackgroundColor: &sheets.Color{
-									Red:   0.9,
-									Green: 0.3,
-									Blue:  0.0,
-									Alpha: 1.0,
-								},
-							},
-						},
-					},
-					Index: 1,
-				},
-			},
-			// Add conditional formatting for "2 – Might redo poorly" (Orange)
-			{
-				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
-					Rule: &sheets.ConditionalFormatRule{
-						Ranges: []*sheets.GridRange{
-							{
-								SheetId:          0,
-								StartColumnIndex: 2,
-								EndColumnIndex:   3,
-							},
-						},
-						BooleanRule: &sheets.BooleanRule{
-							Condition: &sheets.BooleanCondition{
-								Type: "TEXT_EQ",
-								Values: []*sheets.ConditionValue{
-									{UserEnteredValue: "2 – Might redo poorly"},
-								},
-							},
-							Format: &sheets.CellFormat{
-								BackgroundColor: &sheets.Color{
-									Red:   1.0,
-									Green: 0.6,
-									Blue:  0.0,
-									Alpha: 1.0,
-								},
-							},
-						},
-					},
-					Index: 2,
-				},
-			},
-			// Add conditional formatting for "3 – Could redo maybe" (Yellow)
-			{
-				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
-					Rule: &sheets.ConditionalFormatRule{
-						Ranges: []*sheets.GridRange{
-							{
-								SheetId:          0,
-								StartColumnIndex: 2,
-								EndColumnIndex:   3,
-							},
-						},
-						BooleanRule: &sheets.BooleanRule{
-							Condition: &sheets.BooleanCondition{
-								Type: "TEXT_EQ",
-								Values: []*sheets.ConditionValue{
-									{UserEnteredValue: "3 – Could redo maybe"},
-								},
-							},
-							Format: &sheets.CellFormat{
-								BackgroundColor: &sheets.Color{
-									Red:   1.0,
-									Green: 0.8,
-									Blue:  0.0,
-									Alpha: 1.0,
-								},
-							},
-						},
-					},
-					Index: 3,
-				},
-			},
-			// Add conditional formatting for "4 – Confident redo" (Light Green)
-			{
-				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
-					Rule: &sheets.ConditionalFormatRule{
-						Ranges: []*sheets.GridRange{
-							{
-								SheetId:          0,
-								StartColumnIndex: 2,
-								EndColumnIndex:   3,
-							},
-						},
-						BooleanRule: &sheets.BooleanRule{
-							Condition: &sheets.BooleanCondition{
-								Type: "TEXT_EQ",
-								Values: []*sheets.ConditionValue{
-									{UserEnteredValue: "4 – Confident redo"},
-								},
-							},
-							Format: &sheets.CellFormat{
-								BackgroundColor: &sheets.Color{
-									Red:   0.6,
-									Green: 1.0,
-									Blue:  0.0,
-									Alpha: 1.0,
-								},
-							},
-						},
-					},
-					Index: 4,
-				},
-			},
-			// Add conditional formatting for "5 – Perfectly repeatable" (Green)
-			{
-				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
-					Rule: &sheets.ConditionalFormatRule{
-						Ranges: []*sheets.GridRange{
-							{
-								SheetId:          0,
-								StartColumnIndex: 2,
-								EndColumnIndex:   3,
-							},
-						},
-						BooleanRule: &sheets.BooleanRule{
-							Condition: &sheets.BooleanCondition{
-								Type: "TEXT_EQ",
-								Values: []*sheets.ConditionValue{
-									{UserEnteredValue: "5 – Perfectly repeatable"},
-								},
-							},
-							Format: &sheets.CellFormat{
-								BackgroundColor: &sheets.Color{
-									Red:   0.0,
-									Green: 0.8,
-									Blue:  0.0,
-									Alpha: 1.0,
-								},
-							},
-						},
-					},
-					Index: 5,
-				},
+				Strict:       true,
+				ShowCustomUi: true,
 			},
 		},
+	})
+
+	// Add conditional formatting for each label
+	for i, label := range labels {
+		requests = append(requests, &sheets.Request{
+			AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+				Index: int64(i),
+				Rule: &sheets.ConditionalFormatRule{
+					Ranges: []*sheets.GridRange{
+						{
+							SheetId:          0,
+							StartColumnIndex: 2,
+							EndColumnIndex:   3,
+						},
+					},
+					BooleanRule: &sheets.BooleanRule{
+						Condition: &sheets.BooleanCondition{
+							Type: "TEXT_EQ",
+							Values: []*sheets.ConditionValue{
+								{UserEnteredValue: label},
+							},
+						},
+						Format: &sheets.CellFormat{
+							BackgroundColor: colors[i],
+						},
+					},
+				},
+			},
+		})
+	}
+
+	resp, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: requests,
 	}).Do()
 	if err != nil {
-		log.Fatalf("Unable to set confidence validation and formatting: %v", err)
+		log.Fatalf("Unable to set data validation: %v", err)
 	}
+	print(resp)
+	fmt.Println("✅ Confidence validation and formatting set successfully.")
 }
 
 /* ---------- helpers for OAuth & Difficulty ---------- */

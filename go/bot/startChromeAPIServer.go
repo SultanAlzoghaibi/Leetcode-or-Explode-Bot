@@ -108,6 +108,9 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 	}
+	//TODO: pu this into a function as its messy out here
+
+	//Todo: have a check that if the User is not in the DB, pop up warning is called
 	db.AddSubm(database,
 		submission.SubmissionID,
 		submission.ProblemNumber,
@@ -120,6 +123,8 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	printDB(database)
+	addtoSheets(submission)
+
 }
 
 func StartChromeAPIServer() {

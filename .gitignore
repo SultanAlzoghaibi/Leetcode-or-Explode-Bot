@@ -27,3 +27,6 @@ Thumbs.db
 # Environment and config
 .env
 .env.*
+
+
+go/credentials.json

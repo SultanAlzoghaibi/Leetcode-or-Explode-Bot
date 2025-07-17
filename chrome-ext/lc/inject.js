@@ -27,14 +27,20 @@ window.fetch =  async (...args) => {
     const anchor = document.querySelector(
         'a[href^="/problems/"][href$="/"]'
     );
-    let problemNumber;
+    let problemName;
     if (anchor) {
         /* 2️⃣  The textContent is like  "1. Two Sum"
                – split on the first dot or run a regex. */
         const match = anchor.textContent.match(/^(\d+)\s*\./);
         if (match) {
-            problemNumber = parseInt(match[1], 10);
-            console.log("✅ Problem number:", problemNumber); // → 1
+            const number = match[1].padStart(4, "0");
+            const slugMatch = anchor.href.match(/\/problems\/([^/]+)\//);
+            const slug = slugMatch ? slugMatch[1] : "unknown-problem";
+            const fullName = `${number}-${slug}`;
+            //todo: TEST THIS LINE
+            problemName = fullName.length > 80 ? fullName.slice(0, 80) : fullName;
+
+            console.log("✅ Problem ref:", problemName); // → 0001-two-sum
         } else {
             console.warn("Couldn’t parse a number from:", anchor.textContent);
         }
@@ -69,7 +75,7 @@ window.fetch =  async (...args) => {
                 const payload = {
                     userID: userId,
                     submissionId: data.submission_id,
-                    problemNumber: problemNumber,
+                    problemName: problemName,
                     difficulty: difficulty,
                     submittedAt: submittedAt
 
@@ -112,10 +118,10 @@ window.fetch =  async (...args) => {
                             border: 1px solid #444;
                             border-radius: 5px;
                         ">
-                            <option value="0">0 – No clue again</option>
+                            <option value="0">0 – No clue</option>
                             <option value="1">1 – Struggle to repeat</option>
                             <option value="2">2 – Might redo poorly</option>
-                            <option value="3">3 – Could redo okay</option>
+                            <option value="3">3 – Could redo maybe</option>
                             <option value="4">4 – Confident redo</option>
                             <option value="5">5 – Perfectly repeatable</option>
                         </select>

@@ -10,7 +10,7 @@ const submissionId = Math.floor(1000000000 + Math.random() * 9000000000).toStrin
 const data = {
     userID: "7syRMHE2MD",
     submissionId: submissionId,
-    problemNumber: 1,
+    problemName: "0001-two-sum",
     difficulty: "MEDIUM",
     submittedAt: submittedAt,
     confidenceScore: 3,

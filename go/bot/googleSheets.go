@@ -4,7 +4,9 @@ package bot
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -26,19 +28,27 @@ func addtoSheets(subm Submission) {
 		log.Fatalf("Unable to create Sheets service: %v", err)
 	}
 
+	setDifficultyValidationAndFormatting(srv, spreadsheetID)
+	setConfidenceValidationAndFormatting(srv, spreadsheetID)
+
+	// --- Set data validation for "Difficulty" column (column B) ---
+
 	// Marshal topics to JSON string
 	topicsJSON, _ := json.Marshal(subm.Topics)
 
 	// Create the row to append
 	row := []interface{}{
-		subm.SubmissionID,
-		subm.UserID,
-		subm.ProblemNumber,
+		fmt.Sprintf(`=HYPERLINK("https://leetcode.com/problems/%s/", "%s")`,
+			strings.SplitN(subm.ProblemName, "-", 2)[1], // slug
+			subm.ProblemName),
+
 		subm.Difficulty.String(),
 		subm.ConfidenceScore,
+
+		subm.SubmittedAt[:10],
 		subm.SolveTime,
-		subm.Notes,
 		string(topicsJSON),
+		subm.Notes,
 	}
 
 	valueRange := &sheets.ValueRange{
@@ -47,11 +57,326 @@ func addtoSheets(subm Submission) {
 
 	// Append to spreadsheet
 	_, err = srv.Spreadsheets.Values.Append(spreadsheetID, writeRange, valueRange).
-		ValueInputOption("RAW").
+		ValueInputOption("USER_ENTERED").
 		Context(ctx).
 		Do()
 	if err != nil {
 		log.Fatalf("Unable to append data to sheet: %v", err)
+	}
+}
+
+func setDifficultyValidationAndFormatting(srv *sheets.Service, spreadsheetID string) {
+	_, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			{
+				SetDataValidation: &sheets.SetDataValidationRequest{
+					Range: &sheets.GridRange{
+						SheetId:          0, // Update if not the first sheet
+						StartColumnIndex: 1,
+						EndColumnIndex:   2,
+					},
+					Rule: &sheets.DataValidationRule{
+						Condition: &sheets.BooleanCondition{
+							Type: "ONE_OF_LIST",
+							Values: []*sheets.ConditionValue{
+								{UserEnteredValue: "Easy"},
+								{UserEnteredValue: "Medium"},
+								{UserEnteredValue: "Hard"},
+							},
+						},
+						Strict:       true,
+						ShowCustomUi: true,
+					},
+				},
+			},
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{{
+							SheetId:          0,
+							StartColumnIndex: 1,
+							EndColumnIndex:   2,
+						}},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type:   "TEXT_EQ",
+								Values: []*sheets.ConditionValue{{UserEnteredValue: "Easy"}},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{Red: 0.8, Green: 1.0, Blue: 0.8},
+							},
+						},
+					},
+					Index: 0,
+				},
+			},
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{{
+							SheetId:          0,
+							StartColumnIndex: 1,
+							EndColumnIndex:   2,
+						}},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type:   "TEXT_EQ",
+								Values: []*sheets.ConditionValue{{UserEnteredValue: "Medium"}},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{Red: 1.0, Green: 0.8, Blue: 0.4},
+							},
+						},
+					},
+					Index: 0,
+				},
+			},
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{{
+							SheetId:          0,
+							StartColumnIndex: 1,
+							EndColumnIndex:   2,
+						}},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type:   "TEXT_EQ",
+								Values: []*sheets.ConditionValue{{UserEnteredValue: "Hard"}},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{Red: 1.0, Green: 0.8, Blue: 0.8},
+							},
+						},
+					},
+					Index: 0,
+				},
+			},
+		},
+	}).Do()
+	if err != nil {
+		log.Fatalf("Unable to set data validation: %v", err)
+	}
+}
+
+func setConfidenceValidationAndFormatting(srv *sheets.Service, spreadsheetID string) {
+	_, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			// Set data validation
+			{
+				SetDataValidation: &sheets.SetDataValidationRequest{
+					Range: &sheets.GridRange{
+						SheetId:          0, // Update if not the first sheet
+						StartColumnIndex: 2,
+						EndColumnIndex:   3,
+					},
+					Rule: &sheets.DataValidationRule{
+						Condition: &sheets.BooleanCondition{
+							Type: "ONE_OF_LIST",
+							Values: []*sheets.ConditionValue{
+								{UserEnteredValue: "0 – No clue"},
+								{UserEnteredValue: "1 – Struggle to repeat"},
+								{UserEnteredValue: "2 – Might redo poorly"},
+								{UserEnteredValue: "3 – Could redo maybe"},
+								{UserEnteredValue: "4 – Confident redo"},
+								{UserEnteredValue: "5 – Perfectly repeatable"},
+							},
+						},
+						Strict:       true,
+						ShowCustomUi: true,
+					},
+				},
+			},
+			// Add conditional formatting for "0 – No clue" (Dark Red)
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{
+							{
+								SheetId:          0,
+								StartColumnIndex: 2,
+								EndColumnIndex:   3,
+							},
+						},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type: "TEXT_EQ",
+								Values: []*sheets.ConditionValue{
+									{UserEnteredValue: "0 – No clue"},
+								},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{
+									Red:   0.8,
+									Green: 0.0,
+									Blue:  0.0,
+									Alpha: 1.0,
+								},
+							},
+						},
+					},
+					Index: 0,
+				},
+			},
+			// Add conditional formatting for "1 – Struggle to repeat" (Red-Orange)
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{
+							{
+								SheetId:          0,
+								StartColumnIndex: 2,
+								EndColumnIndex:   3,
+							},
+						},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type: "TEXT_EQ",
+								Values: []*sheets.ConditionValue{
+									{UserEnteredValue: "1 – Struggle to repeat"},
+								},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{
+									Red:   0.9,
+									Green: 0.3,
+									Blue:  0.0,
+									Alpha: 1.0,
+								},
+							},
+						},
+					},
+					Index: 1,
+				},
+			},
+			// Add conditional formatting for "2 – Might redo poorly" (Orange)
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{
+							{
+								SheetId:          0,
+								StartColumnIndex: 2,
+								EndColumnIndex:   3,
+							},
+						},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type: "TEXT_EQ",
+								Values: []*sheets.ConditionValue{
+									{UserEnteredValue: "2 – Might redo poorly"},
+								},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{
+									Red:   1.0,
+									Green: 0.6,
+									Blue:  0.0,
+									Alpha: 1.0,
+								},
+							},
+						},
+					},
+					Index: 2,
+				},
+			},
+			// Add conditional formatting for "3 – Could redo maybe" (Yellow)
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{
+							{
+								SheetId:          0,
+								StartColumnIndex: 2,
+								EndColumnIndex:   3,
+							},
+						},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type: "TEXT_EQ",
+								Values: []*sheets.ConditionValue{
+									{UserEnteredValue: "3 – Could redo maybe"},
+								},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{
+									Red:   1.0,
+									Green: 0.8,
+									Blue:  0.0,
+									Alpha: 1.0,
+								},
+							},
+						},
+					},
+					Index: 3,
+				},
+			},
+			// Add conditional formatting for "4 – Confident redo" (Light Green)
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{
+							{
+								SheetId:          0,
+								StartColumnIndex: 2,
+								EndColumnIndex:   3,
+							},
+						},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type: "TEXT_EQ",
+								Values: []*sheets.ConditionValue{
+									{UserEnteredValue: "4 – Confident redo"},
+								},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{
+									Red:   0.6,
+									Green: 1.0,
+									Blue:  0.0,
+									Alpha: 1.0,
+								},
+							},
+						},
+					},
+					Index: 4,
+				},
+			},
+			// Add conditional formatting for "5 – Perfectly repeatable" (Green)
+			{
+				AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+					Rule: &sheets.ConditionalFormatRule{
+						Ranges: []*sheets.GridRange{
+							{
+								SheetId:          0,
+								StartColumnIndex: 2,
+								EndColumnIndex:   3,
+							},
+						},
+						BooleanRule: &sheets.BooleanRule{
+							Condition: &sheets.BooleanCondition{
+								Type: "TEXT_EQ",
+								Values: []*sheets.ConditionValue{
+									{UserEnteredValue: "5 – Perfectly repeatable"},
+								},
+							},
+							Format: &sheets.CellFormat{
+								BackgroundColor: &sheets.Color{
+									Red:   0.0,
+									Green: 0.8,
+									Blue:  0.0,
+									Alpha: 1.0,
+								},
+							},
+						},
+					},
+					Index: 5,
+				},
+			},
+		},
+	}).Do()
+	if err != nil {
+		log.Fatalf("Unable to set confidence validation and formatting: %v", err)
 	}
 }
 

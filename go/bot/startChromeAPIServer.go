@@ -27,11 +27,11 @@ const (
 )
 
 type Submission struct {
-	SubmissionID    string     `json:"submissionId"`  // ex: "1696788684"
-	ProblemNumber   int        `json:"problemNumber"` // ex: 1   (Two-Sum)
-	UserID          string     `json:"userID"`        // ex: "7syRMHE2MD"
-	Difficulty      Difficulty `json:"difficulty"`    // "Easy" | "Medium" | "Hard"
-	SubmittedAt     string     `json:"submittedAt"`   // ISO-8601 timestamp
+	SubmissionID    string     `json:"submissionId"` // ex: "1696788684"
+	ProblemName     string     `json:"problemName"`  // ex: 1   (Two-Sum)
+	UserID          string     `json:"userID"`       // ex: "7syRMHE2MD"
+	Difficulty      Difficulty `json:"difficulty"`   // "Easy" | "Medium" | "Hard"
+	SubmittedAt     string     `json:"submittedAt"`  // ISO-8601 timestamp
 	ConfidenceScore uint8      `json:"confidenceScore"`
 	Notes           string     `json:"notes"`
 	SolveTime       uint8      `json:"solveTime"`
@@ -113,7 +113,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	//Todo: have a check that if the User is not in the DB, pop up warning is called
 	db.AddSubm(database,
 		submission.SubmissionID,
-		submission.ProblemNumber,
+		submission.ProblemName,
 		db.Difficulty(submission.Difficulty),
 		submission.ConfidenceScore,
 		submission.SubmittedAt,
@@ -122,7 +122,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.Notes,
 		submission.UserID)
 
-	printDB(database)
+	//printDB(database)
 	addtoSheets(submission)
 
 }

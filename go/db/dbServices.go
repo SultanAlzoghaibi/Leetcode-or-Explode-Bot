@@ -55,7 +55,7 @@ const (
 
 func AddSubm(db *sql.DB,
 	submissionID string,
-	problemNumber int,
+	problemName string,
 	difficulty Difficulty,
 	confidenceScore uint8,
 	timestamp string,
@@ -71,7 +71,7 @@ func AddSubm(db *sql.DB,
 
 	stmt, err := db.Prepare(`
         INSERT INTO submissions (submission_id, 
-                                 problem_number, 
+                                 problem_name, 
                                  difficulty, 
                                  confidence_score, 
                                  timestamp, 
@@ -87,8 +87,9 @@ func AddSubm(db *sql.DB,
 		return fmt.Errorf("execution failed: %v", err)
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(submissionID,
-		problemNumber,
+	_, err = stmt.Exec(
+		submissionID,
+		problemName,
 		difficulty,
 		confidenceScore,
 		timestamp,

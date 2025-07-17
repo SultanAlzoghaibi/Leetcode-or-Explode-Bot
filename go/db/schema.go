@@ -1,13 +1,17 @@
 package db
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+	"log"
+)
 
 func SetupDB(db *sql.DB) error {
 
 	submisionTable := `
 	CREATE TABLE IF NOT EXISTS submissions (
 	    submission_id VARCHAR(32) PRIMARY KEY,
-	    problem_number INT,
+	    problem_name VARCHAR(80) NOT NULL,
 	    difficulty ENUM('EASY', 'MEDIUM', 'HARD'),
 	    confidence_score TINYINT,
 	    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -40,4 +44,50 @@ CREATE TABLE IF NOT EXISTS users (
 	}
 
 	return nil
+}
+
+func printDB(db *sql.DB) {
+	// --- Print Users ---
+	query1 := `SELECT user_id, discord_user_id, discord_server_id, is_admin, monthly_leetcode, status FROM users`
+	uRows, err := db.Query(query1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer uRows.Close()
+
+	fmt.Println("\nUsers:")
+	for uRows.Next() {
+		var userID, discordUserID, discordServerID, status string
+		var isAdmin bool
+		var monthlyLeetcode uint8
+
+		err := uRows.Scan(&userID, &discordUserID, &discordServerID, &isAdmin, &monthlyLeetcode, &status)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("- %s | %s | %s | Admin: %v | Monthly: %d | Status: %s\n",
+			userID, discordUserID, discordServerID, isAdmin, monthlyLeetcode, status)
+	}
+
+	// --- Print Submissions ---
+	query2 := `SELECT submission_id, problem_name, difficulty, confidence_score, timestamp, topics, solve_time, notes, user_id FROM submissions`
+	sRows, err := db.Query(query2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sRows.Close()
+
+	fmt.Println("\nSubmissions:")
+	for sRows.Next() {
+		var id, problemName, difficulty, submittedAt, topics, notes, userID string
+		var confidenceScore, solveTime uint8
+
+		err := sRows.Scan(&id, &problemName, &difficulty, &confidenceScore, &submittedAt, &topics, &solveTime, &notes, &userID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("- %s | %s | %s | Conf: %d | Time: %dmin | %s | Topics: %s | Notes: %s\n",
+			id, userID, problemName, confidenceScore, solveTime, submittedAt, topics, notes)
+	}
 }

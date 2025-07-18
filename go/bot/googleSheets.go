@@ -13,7 +13,8 @@ import (
 
 // Define spreadsheetID and writeRange globally or pass as needed.
 var spreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ" // TODO: replace with your spreadsheet ID
-var writeRange = "Sheet1!A1:I"                                     // TODO: replace with your target range
+
+var writeRange = "Sheet1!A1:I" // TODO: be dynamic based o the userID/dicord name
 
 var scoreMap = map[int8]string{
 	0: "0 – No clue",
@@ -47,7 +48,7 @@ func addtoSheets(subm Submission) {
 			strings.SplitN(subm.ProblemName, "-", 2)[1], // slug
 			subm.ProblemName),
 
-		subm.Difficulty.String(),
+		subm.Difficulty,
 		scoreMap[int8(subm.ConfidenceScore)],
 
 		subm.SubmittedAt[:10],

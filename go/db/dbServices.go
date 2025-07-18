@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"sort"
 	"strings"
 )
 
@@ -53,18 +54,10 @@ func AddUser(db *sql.DB,
 	return nil
 }
 
-type Difficulty int8
-
-const (
-	Easy Difficulty = iota
-	Medium
-	Hard
-)
-
 func AddSubm(db *sql.DB,
 	submissionID string,
 	problemName string,
-	difficulty Difficulty,
+	difficulty string,
 	confidenceScore uint8,
 	timestamp string,
 	topics []string,
@@ -188,64 +181,90 @@ func PrintDB(db *sql.DB) {
 	}
 }
 
-func GetAllDailyLeets(db *sql.DB, date string) string {
-	query1 := `
-		SELECT user_id, difficulty, COUNT(*) 
-		FROM submissions 
-		WHERE DATE(timestamp) = ? 
-		GROUP BY user_id, difficulty
+type DailyStat struct {
+	UserID     string `json:"userID"`
+	Username   string `json:"username"`
+	Easy       int    `json:"easy"`
+	Medium     int    `json:"medium"`
+	Hard       int    `json:"hard"`
+	TotalToday int    `json:"totalToday"`
+	MonthlyLC  uint8  `json:"monthlyLeetcode"`
+}
+
+func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
+	query := `
+		SELECT u.user_id, u.username, s.difficulty, COUNT(*) 
+		FROM submissions s
+		JOIN users u ON s.user_id = u.user_id
+		WHERE DATE(s.timestamp) = ?
+		GROUP BY u.user_id, u.username, s.difficulty
 	`
 
-	rows, err := db.Query(query1, date)
+	rows, err := db.Query(query, date)
 	if err != nil {
 		log.Fatalf("❌ Query failed: %v", err)
 	}
 	defer rows.Close()
 
-	type stat struct {
-		Easy   int
-		Medium int
-		Hard   int
+	type innerStat struct {
+		Username   string
+		Easy       int
+		Medium     int
+		Hard       int
+		TotalToday int
 	}
 
-	userStats := make(map[string]*stat)
+	userStats := make(map[string]*innerStat)
 
 	for rows.Next() {
-		var userID string
-		var difficultyStr string
+		var userID, username, difficulty string
 		var count int
 
-		if err := rows.Scan(&userID, &difficultyStr, &count); err != nil {
+		if err := rows.Scan(&userID, &username, &difficulty, &count); err != nil {
 			log.Fatalf("❌ Row scan failed: %v", err)
 		}
 
-		if _, ok := userStats[userID]; !ok {
-			userStats[userID] = &stat{}
+		if _, exists := userStats[userID]; !exists {
+			userStats[userID] = &innerStat{Username: username}
 		}
 
-		switch strings.ToUpper(difficultyStr) {
+		stat := userStats[userID]
+		stat.TotalToday += count
+
+		switch strings.ToUpper(difficulty) {
 		case "EASY":
-			userStats[userID].Easy += count
+			stat.Easy += count
 		case "MEDIUM":
-			userStats[userID].Medium += count
+			stat.Medium += count
 		case "HARD":
-			userStats[userID].Hard += count
-		default:
-			log.Printf("⚠️ Unknown difficulty: %s", difficultyStr)
+			stat.Hard += count
 		}
 	}
 
-	var res strings.Builder
-	res.WriteString("📊 Leetcode stats tfor ")
-	res.WriteString(date)
-	res.WriteString("\n")
-
+	var result []DailyStat
 	for userID, s := range userStats {
-		temp := fmt.Sprintf("- %s: Easy=%d | Medium=%d | Hard=%d\n", userID, s.Easy, s.Medium, s.Hard)
-		res.WriteString(temp)
+		var monthlyLC uint8
+		err := db.QueryRow("SELECT monthly_leetcode FROM users WHERE user_id = ?", userID).Scan(&monthlyLC)
+		if err != nil {
+			log.Printf("⚠️ Could not get monthly LC for user %s: %v", userID, err)
+		}
+
+		result = append(result, DailyStat{
+			UserID:     userID,
+			Username:   s.Username,
+			Easy:       s.Easy,
+			Medium:     s.Medium,
+			Hard:       s.Hard,
+			TotalToday: s.TotalToday,
+			MonthlyLC:  monthlyLC,
+		})
 	}
 
-	return res.String()
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].TotalToday > result[j].TotalToday
+	})
+
+	return result
 }
 
 func increaseMonthlyLeetcode(db *sql.DB, userID string, increase uint8) {

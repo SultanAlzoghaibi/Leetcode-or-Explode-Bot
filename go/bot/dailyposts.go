@@ -11,7 +11,7 @@ import (
 func dailyposts(s *discordgo.Session) {
 	fmt.Println("✅ Daily post loop started")
 
-	sleep := 24 * time.Hour
+	sleep := 24 * time.Second
 
 	for {
 		now := time.Now()
@@ -19,12 +19,14 @@ func dailyposts(s *discordgo.Session) {
 
 		// 1. Get stats
 		res := db.GetAllDailyLeets(db.DB, date)
+		fmt.Println(res)
+
 		// 2. Send daily stats message to a channel
-		s.ChannelMessageSend("YOUR_CHANNEL_ID", res)
+		s.ChannelMessageSend("1395556314951974972", "res")
 
 		// 3. Send leaderboard
 		leaderboardmsg := DisplayLeaderboard(db.GetLeaderboard(db.DB))
-		s.ChannelMessageSend("YOUR_CHANNEL_ID", leaderboardmsg)
+		s.ChannelMessageSend("1395556365623234600", leaderboardmsg)
 
 		time.Sleep(sleep)
 	}

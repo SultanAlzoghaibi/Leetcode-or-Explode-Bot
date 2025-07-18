@@ -70,7 +70,7 @@ window.fetch =  async (...args) => {
                 data.status_msg === "Accepted" &&
                 !data.submission_id.startsWith("runcode")
             ) {
-                const submittedAt = new Date(data.task_finish_time).toISOString();
+                const submittedAt = new Date(data.task_finish_time).toLocaleString("sv-SE", { timeZone: "UTC" }).replace(" ", "T");
 
                 const payload = {
                     userID: userId,
@@ -211,6 +211,7 @@ window.fetch =  async (...args) => {
 
                     const durationInput = document.getElementById("duration").value.trim();
                     const duration = parseInt(durationInput);
+
                     const errorBox = document.getElementById("durationError");
 
                     if (duration < 0 || duration > 255) {
@@ -223,6 +224,7 @@ window.fetch =  async (...args) => {
 
                     const selectedTopics = Array.from(document.querySelectorAll('#topicsContainer input:checked'))
                         .map(cb => cb.value);
+
 
                     const fullPayload = {
                         ...payload,

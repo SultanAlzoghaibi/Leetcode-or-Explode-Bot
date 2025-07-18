@@ -14,7 +14,7 @@ func SetupDB(db *sql.DB) error {
 	    problem_name VARCHAR(80) NOT NULL,
 	    difficulty ENUM('EASY', 'MEDIUM', 'HARD'),
 	    confidence_score TINYINT,
-	    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+	    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	    topics TEXT, -- array of strings
 	    solve_time TINYINT UNSIGNED,
 	    notes TEXT,

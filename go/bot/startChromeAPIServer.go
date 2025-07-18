@@ -27,15 +27,15 @@ const (
 )
 
 type Submission struct {
-	SubmissionID    string     `json:"submissionId"` // ex: "1696788684"
-	ProblemName     string     `json:"problemName"`  // ex: 1   (Two-Sum)
-	UserID          string     `json:"userID"`       // ex: "7syRMHE2MD"
-	Difficulty      Difficulty `json:"difficulty"`   // "Easy" | "Medium" | "Hard"
-	SubmittedAt     string     `json:"submittedAt"`  // ISO-8601 timestamp
-	ConfidenceScore uint8      `json:"confidenceScore"`
-	Notes           string     `json:"notes"`
-	SolveTime       uint8      `json:"solveTime"`
-	Topics          []string   `json:"topics"`
+	SubmissionID    string   `json:"submissionId"` // ex: "1696788684"
+	ProblemName     string   `json:"problemName"`  // ex: 1   (Two-Sum)
+	UserID          string   `json:"userID"`       // ex: "7syRMHE2MD"
+	Difficulty      string   `json:"difficulty"`   // "Easy" | "Medium" | "Hard" / ENUM
+	SubmittedAt     string   `json:"submittedAt"`  // ISO-8601 timestamp
+	ConfidenceScore uint8    `json:"confidenceScore"`
+	Notes           string   `json:"notes"`
+	SolveTime       uint8    `json:"solveTime"`
+	Topics          []string `json:"topics"`
 }
 
 func (d *Difficulty) UnmarshalJSON(b []byte) error {
@@ -114,7 +114,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	db.AddSubm(database,
 		submission.SubmissionID,
 		submission.ProblemName,
-		db.Difficulty(submission.Difficulty),
+		submission.Difficulty,
 		submission.ConfidenceScore,
 		submission.SubmittedAt,
 		submission.Topics,

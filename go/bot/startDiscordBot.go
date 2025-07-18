@@ -23,7 +23,7 @@ func StartDiscordBot() {
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
 
-	go dailyposts(sess)
+	//go dailyposts(sess)
 
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)

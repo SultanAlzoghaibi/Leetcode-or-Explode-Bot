@@ -1,0 +1,36 @@
+MIT No Rights Reserved License (Custom Restrictive Variant)
+
+Copyright (c) 2025 Sultan Alzoghaibi
+
+All Rights Reserved.
+
+This project, including all code, configuration files, prompts, models, browser extensions, APIs, and associated scripts, is the original work of the author.
+
+🛑 Restrictions
+
+Permission is not granted to:
+	•	Copy, distribute, sublicense, or sell any portion of this codebase
+	•	Modify, adapt, or create derivative works, whether for public, private, or educational use
+	•	Use this system (or its ideas) as inspiration for another Chrome Extension, Discord Bot, AI-enabled analytics tool, or similar solution
+	•	Train, fine-tune, or prompt any AI model using this repository or its content
+	•	Incorporate any part of this system into another product or service, regardless of intent or audience
+
+✅ Permitted Use
+
+You may:
+	•	Read and explore the repository to understand how the system works for personal knowledge
+	•	Discuss or reference the system in academic or informal contexts, provided attribution is given
+
+⚖️ Legal Enforcement
+
+Violation of this license may result in legal action under applicable copyright and intellectual property laws. The author explicitly reserves all commercial and creative rights.
+
+This license overrides the default MIT permissiveness by revoking all redistribution and reuse rights.
+
+For inquiries about commercial licensing, collaboration, or research partnerships, please contact the author directly.
+
+⸻
+
+This project is protected against unauthorized reproduction, including AI-assisted generation of similar tools.
+
+Created and maintained by Sultan Alzoghaibi, 2025.

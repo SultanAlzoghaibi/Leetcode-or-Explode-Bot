@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"google.golang.org/api/sheets/v4"
 	"os"
 	"os/signal"
 	"strings"
@@ -23,7 +24,7 @@ func StartDiscordBot() {
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
 
-	//go dailyposts(sess)
+	go dailyposts(sess)
 
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
@@ -57,6 +58,15 @@ func StartDiscordBot() {
 			fmt.Println("signup")
 
 			lcUsername := i.ApplicationCommandData().Options[0].StringValue()
+
+			var sheets *sheets.Service
+
+			sheets, err = getGoogleSheets()
+			if err != nil {
+				fmt.Println("❌ Failed to initialize Google Sheets client:", err)
+				return
+			}
+			createNewSheetWithTitle(sheets, spreadsheetID, i.Member.User.Username)
 
 			if db.DoesExist(db.DB, "users", "user_id", lcUsername) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -101,7 +111,7 @@ func StartDiscordBot() {
 
 		case "delete":
 			fmt.Println("delete")
-			db.DeleteRow(db.DB, "users", "discord_user_id", i.Member.User.ID)
+			db.DeleteUserByDiscordID(db.DB, i.Member.User.ID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -110,6 +120,19 @@ func StartDiscordBot() {
 				},
 			})
 
+		case "random leetcode":
+			fmt.Println("Random Leecoset")
+
+			var lcURL string // default is 0
+
+			lcURL = db.GetRandomSkewedLeetcode(db.DB, i.Member.User.ID)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: lcURL,
+				},
+			})
 		}
 
 		// TODO: Add a lockup to leetcode site (or api) to see if this user exists or not
@@ -139,6 +162,10 @@ func StartDiscordBot() {
 		{
 			Name:        "delete",
 			Description: "Delete your self from the database",
+		},
+		{
+			Name:        "random leetcode",
+			Description: "Get a radome Leetcode with skewed probability in favour of least confident past Leetcodes",
 		},
 	}
 

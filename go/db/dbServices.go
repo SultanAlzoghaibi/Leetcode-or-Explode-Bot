@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"math/rand"
 	"sort"
 	"strings"
 )
@@ -103,6 +104,7 @@ func AddSubm(db *sql.DB,
 		return fmt.Errorf("execution failed: %v", err)
 	}
 	log.Printf("✅ Inserted submission %s for user %s", submissionID, userID)
+	increaseMonthlyLeetcode(db, userID, 1)
 	return nil
 }
 
@@ -191,6 +193,21 @@ type DailyStat struct {
 	MonthlyLC  uint8  `json:"monthlyLeetcode"`
 }
 
+func GetUsernameByUserID(db *sql.DB, userID string) (string, error) {
+	query := `SELECT username FROM users WHERE user_id = ?`
+	var username string
+
+	err := db.QueryRow(query, userID).Scan(&username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("no username found for user ID %s", userID)
+		}
+		return "", fmt.Errorf("query failed: %v", err)
+	}
+
+	return username, nil
+}
+
 func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 	query := `
 		SELECT u.user_id, u.username, s.difficulty, COUNT(*) 
@@ -268,32 +285,18 @@ func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 }
 
 func increaseMonthlyLeetcode(db *sql.DB, userID string, increase uint8) {
-	query := `SELECT monthly_leetcode FROM users WHERE user_id = ?`
-	stmt, err := db.Prepare(query)
+	updateQuery := `UPDATE users SET monthly_leetcode = monthly_leetcode + ? WHERE user_id = ?`
+	stmt, err := db.Prepare(updateQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	var moLCAmount uint8
-	err = stmt.QueryRow(userID).Scan(&moLCAmount)
+	_, err = stmt.Exec(increase, userID)
 	if err != nil {
 		log.Fatal(err)
 	}
-	moLCAmount += increase
-
-	updateQuery := `UPDATE users SET monthly_leetcode = ? WHERE user_id = ?`
-	updateStmt, err := db.Prepare(updateQuery)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer updateStmt.Close()
-
-	_, err = updateStmt.Exec(moLCAmount, userID)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("✅ Increased monthly leetcode for user %s: %d\n", userID, moLCAmount)
+	log.Printf("✅ Increased monthly leetcode for user %s by %d", userID, increase)
 }
 
 func getMoLCColumn(db *sql.DB, userID string) {
@@ -360,4 +363,52 @@ func GetLeaderboard(db *sql.DB) []LeaderEntry {
 	}
 
 	return leaderboard
+}
+
+func DeleteUserByDiscordID(db *sql.DB, discordUserID string) error {
+	var userID string
+	err := db.QueryRow("SELECT user_id FROM users WHERE discord_user_id = ?", discordUserID).Scan(&userID)
+	if err != nil {
+		return fmt.Errorf("❌ Could not find user with Discord ID %s: %v", discordUserID, err)
+	}
+
+	// Delete submissions first to satisfy foreign key constraint
+	_, err = db.Exec("DELETE FROM submissions WHERE user_id = ?", userID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to delete submissions for user %s: %v", userID, err)
+	}
+
+	// Then delete the user
+	_, err = db.Exec("DELETE FROM users WHERE user_id = ?", userID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to delete user %s: %v", userID, err)
+	}
+
+	log.Printf("✅ Successfully deleted user %s and their submissions", userID)
+	return nil
+}
+
+func GetRandomSkewedLeetcode(db *sql.DB, userID string) string {
+	query := `SELECT problem_name,confidence_score FROM submissions WHERE user_id = ?`
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	row := stmt.QueryRow(userID)
+	var problemName []string
+	var confidenceScore []int
+	err = row.Scan(&problemName, &confidenceScore)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	min := 0
+	max := len(problemName)
+	randomNum := rand.Intn(max-min+1) + min
+	randomLeet := problemName[randomNum]
+
+	url := fmt.Sprintf("https://leetcode/problems/%s", randomLeet)
+
+	return url
 }

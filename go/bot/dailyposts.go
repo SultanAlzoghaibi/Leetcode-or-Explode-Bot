@@ -22,7 +22,7 @@ func dailyposts(s *discordgo.Session) {
 		fmt.Println(res)
 
 		// 2. Send daily stats message to a channel
-		s.ChannelMessageSend("1395556314951974972", "res")
+		s.ChannelMessageSend("1395556314951974972", DisplayDailylc(res))
 
 		// 3. Send leaderboard
 		leaderboardmsg := DisplayLeaderboard(db.GetLeaderboard(db.DB))
@@ -50,6 +50,29 @@ func DisplayLeaderboard(leaderboard []db.LeaderEntry) string {
 			rank = fmt.Sprintf("%d.", i+1)
 		}
 		res.WriteString(fmt.Sprintf("%s %s — %d\n", rank, entry.Username, entry.MoLCAmount))
+	}
+
+	return res.String()
+}
+
+func DisplayDailylc(stats []db.DailyStat) string {
+	var res strings.Builder
+	res.WriteString(fmt.Sprintf("📅 Day %d — Leetcode Activity Summary\n\n", time.Now().Day()))
+
+	for _, stat := range stats {
+		total := stat.Easy + stat.Medium + stat.Hard
+		res.WriteString(fmt.Sprintf(" %s — ✅ %d solved today | 📆 %d this month\n", stat.Username, total, stat.MonthlyLC))
+
+		if stat.Easy > 0 {
+			res.WriteString(fmt.Sprintf("   🟩 Easy: %d D", stat.Easy))
+		}
+		if stat.Medium > 0 {
+			res.WriteString(fmt.Sprintf("   🟨 Medium: %d ", stat.Medium))
+		}
+		if stat.Hard > 0 {
+			res.WriteString(fmt.Sprintf("   🟥 Hard: %d ", stat.Hard))
+		}
+		res.WriteString("\n")
 	}
 
 	return res.String()

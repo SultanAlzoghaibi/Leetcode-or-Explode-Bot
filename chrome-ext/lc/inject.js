@@ -70,8 +70,7 @@ window.fetch =  async (...args) => {
                 data.status_msg === "Accepted" &&
                 !data.submission_id.startsWith("runcode")
             ) {
-                const submittedAt = new Date(data.task_finish_time).toLocaleString("sv-SE", { timeZone: "UTC" }).replace(" ", "T");
-
+                const submittedAt = new Date(data.task_finish_time).toLocaleString("sv-SE", { timeZone: "America/Los_Angeles" }).replace(" ", "T");                console.log("DATE RN: " + submittedAt)
                 const payload = {
                     userID: userId,
                     submissionId: data.submission_id,
@@ -86,7 +85,12 @@ window.fetch =  async (...args) => {
                 const timeoutId = setTimeout(() => {
                     console.log("⏳ 5 seconds passed. Sending POST_SUBMISSION...");
                     window.postMessage({ type: "POST_SUBMISSION", payload }, "*");
-                }, 90000);
+                    if (bubble) {
+                        document.body.removeChild(bubble);
+                        console.log("⏳ Popup auto-closed after timeout.");
+                    }
+                }, 10000);
+
 
                 // Inject popup trigger (e.g., a bubble)
                 const bubble = document.createElement("div");
@@ -174,6 +178,23 @@ window.fetch =  async (...args) => {
                         onmouseout="this.style.backgroundColor='#ffa500'">
                             Submit
                         </button>
+                        
+                        <button id="dontSubmitPopup" style="
+                            background-color: #555;
+                            color: white;
+                            border: none;
+                            padding: 8px 12px;
+                            font-weight: bold;
+                            width: 100%;
+                            cursor: pointer;
+                            border-radius: 6px;
+                            margin-top: 6px;
+                            transition: background-color 0.2s ease-in-out;
+                        "
+                        onmouseover="this.style.backgroundColor='#444'"
+                        onmouseout="this.style.backgroundColor='#555'">
+                            Cancel
+                        </button>
                     </div>
                 `;
 
@@ -238,6 +259,12 @@ window.fetch =  async (...args) => {
                     window.postMessage({ type: "POST_SUBMISSION", payload: fullPayload }, "*");
 
                     document.body.removeChild(bubble);
+                };
+
+                document.getElementById("dontSubmitPopup").onclick = () => {
+                    clearTimeout(timeoutId); // cancel fallback post
+                    document.body.removeChild(bubble); // close the popup
+                    console.log("🚫 Submission popup canceled by user.");
                 };
 
                 console.log("SUCCESSS ✅✅✅");

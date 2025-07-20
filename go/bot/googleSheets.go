@@ -2,6 +2,7 @@
 package bot
 
 import (
+	"Leetcode-or-Explode-Bot/db"
 	"context"
 	"fmt"
 	"log"
@@ -14,7 +15,7 @@ import (
 // Define spreadsheetID and writeRange globally or pass as needed.
 var spreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ" // TODO: replace with your spreadsheet ID
 
-var writeRange = "Sheet1!A1:I" // TODO: be dynamic based o the userID/dicord name
+var writeRange = "Sheet1!A2:I" // TODO: be dynamic based o the userID/dicord name
 
 var scoreMap = map[int8]string{
 	0: "0 – No clue",
@@ -23,6 +24,15 @@ var scoreMap = map[int8]string{
 	3: "3 – Could redo maybe",
 	4: "4 – Confident redo",
 	5: "5 – Perfectly repeatable",
+}
+
+func getGoogleSheets() (*sheets.Service, error) {
+	ctx := context.Background()
+	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("go/credentials.json"))
+	if err != nil {
+		return nil, err
+	}
+	return srv, nil
 }
 
 func addtoSheets(subm Submission) {
@@ -62,6 +72,14 @@ func addtoSheets(subm Submission) {
 	}
 
 	// Append to spreadsheet
+	var sheetsName string
+
+	sheetsName, err = db.GetUsernameByUserID(db.DB, subm.UserID)
+	if err != nil {
+		log.Fatalf("Unable to get username for submission: %v", err)
+	}
+	writeRange := fmt.Sprintf(sheetsName + "!A2:I")
+
 	_, err = srv.Spreadsheets.Values.Append(spreadsheetID, writeRange, valueRange).
 		ValueInputOption("USER_ENTERED").
 		Context(ctx).
@@ -265,4 +283,115 @@ func (d Difficulty) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+// createNewSheetWithTitle creates a new sheet with the given title in the specified spreadsheet.
+func createNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) error {
+	// Step 1: Create the new sheet
+	_, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			{
+				AddSheet: &sheets.AddSheetRequest{
+					Properties: &sheets.SheetProperties{
+						Title: title,
+					},
+				},
+			},
+		},
+	}).Do()
+	if err != nil {
+		return fmt.Errorf("failed to create sheet '%s': %v", title, err)
+	}
+	fmt.Printf("✅ Sheet '%s' created successfully.\n", title)
+
+	// Step 2: Write headers
+	headers := &sheets.ValueRange{
+		Range: fmt.Sprintf("%s!A1:I1", title),
+		Values: [][]interface{}{{
+			"Problem", "Difficulty", "Confidence", "Date", "Time (min)", "Topics", "Notes", "Counter", "UserID",
+		}},
+	}
+	_, err = srv.Spreadsheets.Values.Update(spreadsheetID, headers.Range, headers).
+		ValueInputOption("RAW").
+		Context(context.Background()).
+		Do()
+	if err != nil {
+		return fmt.Errorf("failed to write headers: %v", err)
+	}
+
+	// Step 3: Freeze header row and enable filters
+	sheetMeta, err := srv.Spreadsheets.Get(spreadsheetID).Do()
+	if err != nil {
+		return fmt.Errorf("failed to get spreadsheet metadata: %v", err)
+	}
+
+	var sheetID int64 = -1
+	for _, s := range sheetMeta.Sheets {
+		if s.Properties.Title == title {
+			sheetID = s.Properties.SheetId
+			break
+		}
+	}
+	if sheetID == -1 {
+		return fmt.Errorf("failed to find sheet ID for '%s'", title)
+	}
+
+	_, err = srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			{
+				UpdateSheetProperties: &sheets.UpdateSheetPropertiesRequest{
+					Properties: &sheets.SheetProperties{
+						SheetId:        sheetID,
+						GridProperties: &sheets.GridProperties{FrozenRowCount: 1},
+					},
+					Fields: "gridProperties.frozenRowCount",
+				},
+			},
+		},
+	}).Do()
+	if err != nil {
+		return fmt.Errorf("failed to apply filters or freeze header: %v", err)
+	}
+
+	return nil
+}
+
+// deleteSheetByTitle deletes a sheet from the spreadsheet by its title.
+func deleteSheetByTitle(srv *sheets.Service, spreadsheetID, title string) error {
+	// First, get spreadsheet metadata to find the sheet ID
+	resp, err := srv.Spreadsheets.Get(spreadsheetID).Do()
+	if err != nil {
+		return fmt.Errorf("unable to retrieve spreadsheet metadata: %v", err)
+	}
+
+	var sheetID int64 = -1
+	for _, sheet := range resp.Sheets {
+		if sheet.Properties.Title == title {
+			sheetID = sheet.Properties.SheetId
+			break
+		}
+	}
+
+	if sheetID == -1 {
+		return fmt.Errorf("sheet with title '%s' not found", title)
+	}
+
+	// Build the delete sheet request
+	requests := []*sheets.Request{
+		{
+			DeleteSheet: &sheets.DeleteSheetRequest{
+				SheetId: sheetID,
+			},
+		},
+	}
+
+	// Execute the request
+	_, err = srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: requests,
+	}).Do()
+	if err != nil {
+		return fmt.Errorf("failed to delete sheet '%s': %v", title, err)
+	}
+	fmt.Printf("🗑️ Sheet '%s' deleted successfully.\n", title)
+	return nil
 }

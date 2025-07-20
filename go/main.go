@@ -11,6 +11,7 @@ var Conn *sql.DB
 func main() {
 
 	db.Init()
+
 	go bot.StartDiscordBot() // requires wifie
 	go bot.StartChromeAPIServer()
 

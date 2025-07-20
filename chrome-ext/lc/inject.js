@@ -84,11 +84,45 @@ window.fetch =  async (...args) => {
 
                 const timeoutId = setTimeout(() => {
                     console.log("⏳ 5 seconds passed. Sending POST_SUBMISSION...");
-                    window.postMessage({ type: "POST_SUBMISSION", payload }, "*");
+
+                    const confidenceScore = parseInt(document.getElementById("confidence")?.value);
+                    const notes = document.getElementById("notes")?.value;
+
+                    const durationInput = document.getElementById("duration")?.value.trim();
+                    const duration = parseInt(durationInput);
+
+                    const selectedTopics = Array.from(document.querySelectorAll('#topicsContainer input:checked'))
+                        .map(cb => cb.value);
+
+                    const fullPayload = {
+                        ...payload,
+                        confidenceScore,
+                        notes,
+                        duration,
+                        topics: selectedTopics
+                    };
+
+                    window.postMessage({ type: "POST_SUBMISSION", payload: fullPayload }, "*");
                     if (bubble) {
                         document.body.removeChild(bubble);
                         console.log("⏳ Popup auto-closed after timeout.");
                     }
+                    const summaryBubble = document.createElement("div");
+                    summaryBubble.innerText = "✅ Submitted Check!";
+                    summaryBubble.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        left: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 12px;
+                        border-radius: 8px;
+                        z-index: 9999;
+                        font-family: sans-serif;
+                        font-weight: bold;
+                    `;
+                    document.body.appendChild(summaryBubble);
+                    setTimeout(() => document.body.removeChild(summaryBubble), 4000);
                 }, 10000);
 
 
@@ -260,11 +294,43 @@ window.fetch =  async (...args) => {
                     window.postMessage({ type: "POST_SUBMISSION", payload: fullPayload }, "*");
 
                     document.body.removeChild(bubble);
+                    const summaryBubble = document.createElement("div");
+                    summaryBubble.innerText = "✅ Submitted Check!";
+                    summaryBubble.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        left: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 12px;
+                        border-radius: 8px;
+                        z-index: 9999;
+                        font-family: sans-serif;
+                        font-weight: bold;
+                    `;
+                    document.body.appendChild(summaryBubble);
+                    setTimeout(() => document.body.removeChild(summaryBubble), 4000);
                 };
 
                 document.getElementById("dontSubmitPopup").onclick = () => {
                     clearTimeout(timeoutId); // cancel fallback post
                     document.body.removeChild(bubble); // close the popup
+                    const cancelBubble = document.createElement("div");
+                    cancelBubble.innerText = "❌ Not Submitted!";
+                    cancelBubble.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        left: 20px;
+                        background: #dc3545;
+                        color: white;
+                        padding: 12px;
+                        border-radius: 8px;
+                        z-index: 9999;
+                        font-family: sans-serif;
+                        font-weight: bold;
+                    `;
+                    document.body.appendChild(cancelBubble);
+                    setTimeout(() => document.body.removeChild(cancelBubble), 4000);
                     console.log("🚫 Submission popup canceled by user.");
                 };
 

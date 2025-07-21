@@ -27,5 +27,8 @@ func Init() {
 		log.Fatalf("❌ Ping failed: %v", err)
 	}
 
+	DB.SetMaxOpenConns(20)
+	DB.SetMaxIdleConns(20)
+
 	log.Println("✅ Connected to DB")
 }

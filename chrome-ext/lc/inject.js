@@ -1,4 +1,4 @@
-console.log("injected into the head of the DOM")
+//console.log("injected into the head of the DOM")
 
 const originalFetch = window.fetch; // ✅ Save original fetch
 
@@ -11,15 +11,15 @@ window.fetch =  async (...args) => {
     const globalVal = JSON.parse(localStorage.getItem("GLOBAL_DATA:value"));
     const userId = globalVal?.userStatus?.username;
     const topics = extractTopics();
-    console.log(topics.toString())
+    //console.log(topics.toString())
 
-    console.log("✅ Unique LeetCode User ID:", userId);
+    //console.log("✅ Unique LeetCode User ID:", userId);
 
     const difficultyElement = document.querySelector('div.text-difficulty-easy, div.text-difficulty-medium, div.text-difficulty-hard');
     let difficulty;
     if (difficultyElement) {
         difficulty = difficultyElement.textContent.trim(); // "Easy", "Medium", or "Hard"
-        console.log("🧠 Difficulty:", difficulty);
+        //console.log("🧠 Difficulty:", difficulty);
     }
 
 
@@ -40,7 +40,7 @@ window.fetch =  async (...args) => {
             //todo: TEST THIS LINE
             problemName = fullName.length > 80 ? fullName.slice(0, 80) : fullName;
 
-            console.log("✅ Problem ref:", problemName); // → 0001-two-sum
+            //("✅ Problem ref:", problemName); // → 0001-two-sum
         } else {
             console.warn("Couldn’t parse a number from:", anchor.textContent);
         }
@@ -52,7 +52,7 @@ window.fetch =  async (...args) => {
     function extractTopics() {
         const topicLinks = document.querySelectorAll('a[href^="/tag/"]');
         const topics = Array.from(topicLinks).map(link => link.textContent.trim());
-        console.log("📚 Parsed topics:", topics);
+        //console.log("📚 Parsed topics:", topics);
         return topics;
     }
 
@@ -60,17 +60,18 @@ window.fetch =  async (...args) => {
     const url = typeof args[0] === "string" ? args[0] : args[0].url;
 
     if (url.includes("/submissions/detail/") && url.includes("/check/")) {
-        console.log("📝 Detected submission request to:", url);
+        //console.log("📝 Detected submission request to:", url);
         try {
             const data = await clone.json();
-            console.log("🔬 /check/ payload →", data);
+            //console.log("🔬 /check/ payload →", data);
 
             if (
                 data.state === "SUCCESS" &&
                 data.status_msg === "Accepted" &&
                 !data.submission_id.startsWith("runcode")
             ) {
-                const submittedAt = new Date(data.task_finish_time).toLocaleString("sv-SE", { timeZone: "America/Los_Angeles" }).replace(" ", "T");                console.log("DATE RN: " + submittedAt)
+                const submittedAt = new Date(data.task_finish_time).toLocaleString("sv-SE", { timeZone: "America/Los_Angeles" }).replace(" ", "T");
+                //console.log("DATE RN: " + submittedAt)
                 const payload = {
                     userID: userId,
                     submissionId: data.submission_id,
@@ -80,10 +81,10 @@ window.fetch =  async (...args) => {
 
                 };
 
-                console.log("🕒 Waiting 5 seconds before sending POST_SUBMISSION...");
+                //console.log("🕒 Waiting 5 seconds before sending POST_SUBMISSION...");
 
                 const timeoutId = setTimeout(() => {
-                    console.log("⏳ 5 seconds passed. Sending POST_SUBMISSION...");
+                    //console.log("⏳ 5 seconds passed. Sending POST_SUBMISSION...");
 
                     const confidenceScore = parseInt(document.getElementById("confidence")?.value);
                     const notes = document.getElementById("notes")?.value;
@@ -105,7 +106,7 @@ window.fetch =  async (...args) => {
                     window.postMessage({ type: "POST_SUBMISSION", payload: fullPayload }, "*");
                     if (bubble) {
                         document.body.removeChild(bubble);
-                        console.log("⏳ Popup auto-closed after timeout.");
+                        console.log("⏳ Popup auto-closed and submitted after timer ended.");
                     }
                     const summaryBubble = document.createElement("div");
                     summaryBubble.innerText = "✅ Submitted Check!";
@@ -123,7 +124,7 @@ window.fetch =  async (...args) => {
                     `;
                     document.body.appendChild(summaryBubble);
                     setTimeout(() => document.body.removeChild(summaryBubble), 4000);
-                }, 10000);
+                }, 90000);
 
 
 
@@ -290,7 +291,7 @@ window.fetch =  async (...args) => {
                         topics: selectedTopics
                     };
 
-                    console.log("⚡ User submitted popup. Sending POST_SUBMISSION with extra fields.");
+                    //console.log("⚡ User submitted popup. Sending POST_SUBMISSION with extra fields.");
                     window.postMessage({ type: "POST_SUBMISSION", payload: fullPayload }, "*");
 
                     document.body.removeChild(bubble);
@@ -331,10 +332,10 @@ window.fetch =  async (...args) => {
                     `;
                     document.body.appendChild(cancelBubble);
                     setTimeout(() => document.body.removeChild(cancelBubble), 4000);
-                    console.log("🚫 Submission popup canceled by user.");
+                    //console.log("🚫 Submission popup canceled by user.");
                 };
 
-                console.log("SUCCESSS ✅✅✅");
+                //console.log("SUCCESSS ✅✅✅");
                                                     }
 
         } catch (e) {

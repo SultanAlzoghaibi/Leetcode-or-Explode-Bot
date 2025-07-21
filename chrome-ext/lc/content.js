@@ -11,7 +11,7 @@ window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     if (event.data.type === "POST_SUBMISSION") {
 
-        console.log("contents when POST_SUBMSION")
+        //console.log("contents when POST_SUBMSION")
         try {
             const package = {
                 type: "POST_SUBMISSION",
@@ -20,11 +20,11 @@ window.addEventListener("message", (event) => {
             console.log("Sending package:", JSON.stringify(package, null, 2));
 
             chrome.runtime.sendMessage(package, (response) => {
-                console.log("✅ we got passed Runtime.sendMessage", response); // move it here
+                //console.log("✅ we got passed Runtime.sendMessage", response); // move it here
             });
 
         } catch (e){
-            console.log( "erro in addEventListener()",e)
+            //console.log( "erro in addEventListener()",e)
         }
 
     }

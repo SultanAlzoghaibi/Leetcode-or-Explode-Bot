@@ -58,7 +58,9 @@ func (d *Difficulty) UnmarshalJSON(b []byte) error {
 }
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin",
+		"chrome-extension://bphfdocncclgepoiabbjodikpeegopfd")
+
 	w.Header().Set("Access-Control-Allow-Methods", "POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 

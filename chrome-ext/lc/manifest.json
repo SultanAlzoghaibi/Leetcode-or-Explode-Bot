@@ -1,9 +1,9 @@
 {
-  "name": "LC Submit Hook",
+  "name": "Leetcode or Explode",
   "version": "0.1.0",
   "manifest_version": 3,
-  "permissions": ["declarativeNetRequest", "storage", "tabs", "alarms", "scripting"],
-  "host_permissions": ["https://leetcode.com/*", "https://*.ngrok.app/"],
+  "permissions": ["scripting"],
+  "host_permissions": ["https://leetcode.com/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -14,14 +14,15 @@
       "run_at": "document_idle"
     }
   ],
+
   "web_accessible_resources": [
     {
-      "resources": ["inject.js", "injectBubble.js"],
+      "resources": ["inject.js"],
       "matches": ["https://leetcode.com/*"]
     }
   ],
   "action": {
     "default_popup": "hello.html",
-    "default_icon": "icon.png"
+    "default_icon": "LC-or-Explode.png"
   }
 }

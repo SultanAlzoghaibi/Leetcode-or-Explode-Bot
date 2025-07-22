@@ -58,12 +58,17 @@ func (d *Difficulty) UnmarshalJSON(b []byte) error {
 }
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("we got a submission")
 	w.Header().Set("Access-Control-Allow-Origin",
 		"chrome-extension://bphfdocncclgepoiabbjodikpeegopfd")
 
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	if r.Method != http.MethodPost {
 		log.Println("❌ Rejected non-POST request")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

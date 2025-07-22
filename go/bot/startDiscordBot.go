@@ -6,6 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/sheets/v4"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -51,7 +52,7 @@ func StartDiscordBot() {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "You best start leetcoding soon... or else 😡",
+					Content: "no pong here, ONLY the Leetcode Warden, You best start leetcoding soon... or else! 😡",
 				},
 			})
 
@@ -112,7 +113,43 @@ func StartDiscordBot() {
 
 		case "delete":
 			fmt.Println("delete")
+			confirmInput := i.ApplicationCommandData().Options[0].StringValue()
+			if strings.ToLower(confirmInput) != "confirm" {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "⚠️ You must type `confirm` to delete your data. This action is irreversible.",
+						Flags:   1 << 6,
+					},
+				})
+				return
+			}
+
+			// ✅ Check if user exists before proceeding
+			exists := db.DoesExist(db.DB, "users", "discord_id", i.Member.User.ID)
+			if !exists {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "⚠️ No record found for this user. Have you signed up?",
+						Flags:   1 << 6,
+					},
+				})
+				return
+			}
+
 			db.DeleteUserByDiscordID(db.DB, i.Member.User.ID)
+			var sheets *sheets.Service
+
+			sheets, err = getGoogleSheets()
+			if err != nil {
+				fmt.Println("❌ Failed to initialize Google Sheets client:", err)
+				return
+			}
+			err := deleteSheetByTitle(sheets, spreadsheetID, i.Member.User.Username)
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -121,17 +158,36 @@ func StartDiscordBot() {
 				},
 			})
 
-		case "random leetcode":
-			fmt.Println("Random Leecoset")
+		case "random-leetcode":
+			fmt.Println("Random-Leecoset")
 
-			var lcURL string // default is 0
+			userID, err := db.GetUserIDwithDiscordID(db.DB, i.Member.User.ID)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "❌ Could not find your user record. Make sure you signed up.",
+						Flags:   1 << 6,
+					},
+				})
+				return
+			}
 
-			lcURL = db.GetRandomSkewedLeetcode(db.DB, i.Member.User.ID)
+			lcURL := db.GetRandomSkewedLeetcode(db.DB, userID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: lcURL,
+				},
+			})
+
+		case "status":
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "comming SOON",
 				},
 			})
 		}
@@ -163,10 +219,40 @@ func StartDiscordBot() {
 		{
 			Name:        "delete",
 			Description: "Delete your self from the database",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "confirm",
+					Description: "⚠️ Type `confirm` to delete all your data and spreadsheet",
+					Required:    true,
+				},
+			},
 		},
 		{
-			Name:        "random leetcode",
+			Name:        "random-leetcode",
 			Description: "Get a radome Leetcode with skewed probability in favour of least confident past Leetcodes",
+		},
+		{
+			Name:        "status",
+			Description: "Change your ping status (DEFAULT or NO-PING)",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "value",
+					Description: "Choose your ping status",
+					Required:    true,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{
+							Name:  "DEFAULT",
+							Value: "DEFAULT",
+						},
+						{
+							Name:  "NO-PING",
+							Value: "NO-PING",
+						},
+					},
+				},
+			},
 		},
 	}
 

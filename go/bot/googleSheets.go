@@ -12,10 +12,12 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
-// Define spreadsheetID and writeRange globally or pass as needed.
-var spreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ" // TODO: replace with your spreadsheet ID
+//TODO: Setup the sheet insially ith the color/pill format to get it to work nicely
 
-var writeRange = "Sheet1!A2:I" // TODO: be dynamic based o the userID/dicord name
+// Define spreadsheetID and writeRange globally or pass as needed.
+var spreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ"
+
+var writeRange = ""
 
 var scoreMap = map[int8]string{
 	0: "0 – No clue",
@@ -353,12 +355,194 @@ func createNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) e
 		return fmt.Errorf("failed to apply filters or freeze header: %v", err)
 	}
 
+	// Step 4: Add data validation and conditional formatting
+	labels := []string{
+		"0 – No clue",
+		"1 – Struggle to repeat",
+		"2 – Might redo poorly",
+		"3 – Could redo maybe",
+		"4 – Confident redo",
+		"5 – Perfectly repeatable",
+	}
+
+	colors := []*sheets.Color{
+		{Red: 0.8, Green: 0.0, Blue: 0.0, Alpha: 1.0}, // red
+		{Red: 0.9, Green: 0.3, Blue: 0.0, Alpha: 1.0}, // red-orange
+		{Red: 1.0, Green: 0.6, Blue: 0.0, Alpha: 1.0}, // orange
+		{Red: 1.0, Green: 0.8, Blue: 0.0, Alpha: 1.0}, // yellow
+		{Red: 0.6, Green: 1.0, Blue: 0.0, Alpha: 1.0}, // light green
+		{Red: 0.0, Green: 0.8, Blue: 0.0, Alpha: 1.0}, // green
+	}
+
+	var validationRequests []*sheets.Request
+
+	// Difficulty dropdown (Column B)
+	validationRequests = append(validationRequests, &sheets.Request{
+		SetDataValidation: &sheets.SetDataValidationRequest{
+			Range: &sheets.GridRange{
+				SheetId:          sheetID,
+				StartRowIndex:    1,
+				StartColumnIndex: 1,
+				EndColumnIndex:   2,
+			},
+			Rule: &sheets.DataValidationRule{
+				Condition: &sheets.BooleanCondition{
+					Type: "ONE_OF_LIST",
+					Values: []*sheets.ConditionValue{
+						{UserEnteredValue: "Easy"},
+						{UserEnteredValue: "Medium"},
+						{UserEnteredValue: "Hard"},
+					},
+				},
+				Strict:       true,
+				ShowCustomUi: true,
+			},
+		},
+	})
+
+	// Conditional formatting for Difficulty (Column B)
+	// Easy = Green
+	validationRequests = append(validationRequests, &sheets.Request{
+		AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+			Index: 0,
+			Rule: &sheets.ConditionalFormatRule{
+				Ranges: []*sheets.GridRange{{
+					SheetId:          sheetID,
+					StartRowIndex:    1,
+					StartColumnIndex: 1,
+					EndColumnIndex:   2,
+				}},
+				BooleanRule: &sheets.BooleanRule{
+					Condition: &sheets.BooleanCondition{
+						Type: "TEXT_EQ",
+						Values: []*sheets.ConditionValue{{
+							UserEnteredValue: "Easy",
+						}},
+					},
+					Format: &sheets.CellFormat{
+						BackgroundColor: &sheets.Color{Red: 0.6, Green: 1.0, Blue: 0.6},
+					},
+				},
+			},
+		},
+	})
+	// Medium = Yellow
+	validationRequests = append(validationRequests, &sheets.Request{
+		AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+			Index: 1,
+			Rule: &sheets.ConditionalFormatRule{
+				Ranges: []*sheets.GridRange{{
+					SheetId:          sheetID,
+					StartRowIndex:    1,
+					StartColumnIndex: 1,
+					EndColumnIndex:   2,
+				}},
+				BooleanRule: &sheets.BooleanRule{
+					Condition: &sheets.BooleanCondition{
+						Type: "TEXT_EQ",
+						Values: []*sheets.ConditionValue{{
+							UserEnteredValue: "Medium",
+						}},
+					},
+					Format: &sheets.CellFormat{
+						BackgroundColor: &sheets.Color{Red: 1.0, Green: 1.0, Blue: 0.6},
+					},
+				},
+			},
+		},
+	})
+	// Hard = Red
+	validationRequests = append(validationRequests, &sheets.Request{
+		AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+			Index: 2,
+			Rule: &sheets.ConditionalFormatRule{
+				Ranges: []*sheets.GridRange{{
+					SheetId:          sheetID,
+					StartRowIndex:    1,
+					StartColumnIndex: 1,
+					EndColumnIndex:   2,
+				}},
+				BooleanRule: &sheets.BooleanRule{
+					Condition: &sheets.BooleanCondition{
+						Type: "TEXT_EQ",
+						Values: []*sheets.ConditionValue{{
+							UserEnteredValue: "Hard",
+						}},
+					},
+					Format: &sheets.CellFormat{
+						BackgroundColor: &sheets.Color{Red: 1.0, Green: 0.6, Blue: 0.6},
+					},
+				},
+			},
+		},
+	})
+
+	// Confidence dropdown (Column C)
+	conditionValues := make([]*sheets.ConditionValue, len(labels))
+	for i, label := range labels {
+		conditionValues[i] = &sheets.ConditionValue{UserEnteredValue: label}
+	}
+	validationRequests = append(validationRequests, &sheets.Request{
+		SetDataValidation: &sheets.SetDataValidationRequest{
+			Range: &sheets.GridRange{
+				SheetId:          sheetID,
+				StartRowIndex:    1,
+				StartColumnIndex: 2,
+				EndColumnIndex:   3,
+			},
+			Rule: &sheets.DataValidationRule{
+				Condition: &sheets.BooleanCondition{
+					Type:   "ONE_OF_LIST",
+					Values: conditionValues,
+				},
+				Strict:       true,
+				ShowCustomUi: true,
+			},
+		},
+	})
+
+	// Confidence formatting
+	for i, label := range labels {
+		validationRequests = append(validationRequests, &sheets.Request{
+			AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+				Index: int64(i),
+				Rule: &sheets.ConditionalFormatRule{
+					Ranges: []*sheets.GridRange{{
+						SheetId:          sheetID,
+						StartRowIndex:    1,
+						StartColumnIndex: 2,
+						EndColumnIndex:   3,
+					}},
+					BooleanRule: &sheets.BooleanRule{
+						Condition: &sheets.BooleanCondition{
+							Type: "TEXT_EQ",
+							Values: []*sheets.ConditionValue{{
+								UserEnteredValue: label,
+							}},
+						},
+						Format: &sheets.CellFormat{
+							BackgroundColor: colors[i],
+						},
+					},
+				},
+			},
+		})
+	}
+
+	_, err = srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: validationRequests,
+	}).Do()
+	if err != nil {
+		return fmt.Errorf("failed to set validation or formatting: %v", err)
+	}
+
 	return nil
 }
 
 // deleteSheetByTitle deletes a sheet from the spreadsheet by its title.
 func deleteSheetByTitle(srv *sheets.Service, spreadsheetID, title string) error {
 	// First, get spreadsheet metadata to find the sheet ID
+
 	resp, err := srv.Spreadsheets.Get(spreadsheetID).Do()
 	if err != nil {
 		return fmt.Errorf("unable to retrieve spreadsheet metadata: %v", err)
@@ -373,7 +557,8 @@ func deleteSheetByTitle(srv *sheets.Service, spreadsheetID, title string) error 
 	}
 
 	if sheetID == -1 {
-		return fmt.Errorf("sheet with title '%s' not found", title)
+		fmt.Printf("⚠️ Sheet with title '%s' not found. Skipping deletion.\n", title)
+		return nil
 	}
 
 	// Build the delete sheet request

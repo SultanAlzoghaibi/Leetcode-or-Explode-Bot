@@ -2,6 +2,7 @@ package bot
 
 import (
 	"Leetcode-or-Explode-Bot/db"
+	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"strings"
@@ -11,7 +12,7 @@ import (
 func dailyposts(s *discordgo.Session) {
 	fmt.Println("✅ Daily post loop started")
 
-	sleep := 24 * time.Second
+	sleep := 12 * time.Second
 
 	for {
 		now := time.Now()
@@ -23,13 +24,36 @@ func dailyposts(s *discordgo.Session) {
 
 		// 2. Send daily stats message to a channel
 		s.ChannelMessageSend("1395556314951974972", DisplayDailylc(res))
+		//TODO: change these to being the new discord Serverg
 
 		// 3. Send leaderboard
 		leaderboardmsg := DisplayLeaderboard(db.GetLeaderboard(db.DB))
 		s.ChannelMessageSend("1395556365623234600", leaderboardmsg)
 
-		time.Sleep(sleep)
+		currentMonth := now.Month()
+
+		time.Sleep(sleep) // 12 hours
+		//wasInative(db.DB, db.QueryAllSuerActivity(db.DB), s) //TODO commin soon feature
+		time.Sleep(sleep) // 12 hours
+
+		lastRecordedMonth := now.Month()
+
+		if currentMonth != lastRecordedMonth {
+			db.ResetMoLCA(db.DB)
+		}
+
 	}
+}
+
+func wasInative(db *sql.DB, hashmap map[string]bool, s *discordgo.Session) {
+	var sb strings.Builder
+	sb.WriteString("📢 **Ping of Shame** — No Leetcodes in the last 4 days!\n\n")
+
+	for userID := range hashmap {
+		sb.WriteString(fmt.Sprintf("<@%s> ", userID))
+	}
+
+	s.ChannelMessageSend("1395556365623234600", sb.String())
 }
 
 type LeaderEntry struct {

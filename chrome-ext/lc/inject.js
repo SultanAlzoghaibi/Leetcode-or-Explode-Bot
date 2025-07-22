@@ -2,51 +2,38 @@
 
 const originalFetch = window.fetch; // ✅ Save original fetch
 
+function getCookie(name) {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith(name + '='))
+        ?.split('=')[1];
+}
+
+function showErrorPopup(message) {
+    const popup = document.createElement("div");
+    popup.innerText = message;
+    popup.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: #dc3545;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    z-index: 9999;
+    font-family: sans-serif;
+    font-weight: bold;
+  `;
+    document.body.appendChild(popup);
+    setTimeout(() => document.body.removeChild(popup), 5000);
+}
+
 window.fetch =  async (...args) => {
 
     const res = await originalFetch(...args);
     const clone = res.clone();
 
 
-    const globalVal = JSON.parse(localStorage.getItem("GLOBAL_DATA:value"));
-    const userId = globalVal?.userStatus?.username;
-    const topics = extractTopics();
-    //console.log(topics.toString())
-
-    //console.log("✅ Unique LeetCode User ID:", userId);
-
-    const difficultyElement = document.querySelector('div.text-difficulty-easy, div.text-difficulty-medium, div.text-difficulty-hard');
-    let difficulty;
-    if (difficultyElement) {
-        difficulty = difficultyElement.textContent.trim(); // "Easy", "Medium", or "Hard"
-        //console.log("🧠 Difficulty:", difficulty);
-    }
-
-
-    // 1️⃣  Find the <a> element (adjust the selector if you need something stricter)
-    const anchor = document.querySelector(
-        'a[href^="/problems/"][href$="/"]'
-    );
-    let problemName;
-    if (anchor) {
-        /* 2️⃣  The textContent is like  "1. Two Sum"
-               – split on the first dot or run a regex. */
-        const match = anchor.textContent.match(/^(\d+)\s*\./);
-        if (match) {
-            const number = match[1].padStart(4, "0");
-            const slugMatch = anchor.href.match(/\/problems\/([^/]+)\//);
-            const slug = slugMatch ? slugMatch[1] : "unknown-problem";
-            const fullName = `${number}-${slug}`;
-            //todo: TEST THIS LINE
-            problemName = fullName.length > 80 ? fullName.slice(0, 80) : fullName;
-
-            //("✅ Problem ref:", problemName); // → 0001-two-sum
-        } else {
-            console.warn("Couldn’t parse a number from:", anchor.textContent);
-        }
-    } else {
-        console.warn("Anchor not found – check your selector.");
-    }
 
 
     function extractTopics() {
@@ -72,6 +59,92 @@ window.fetch =  async (...args) => {
             ) {
                 const submittedAt = new Date(data.task_finish_time).toLocaleString("sv-SE", { timeZone: "America/Los_Angeles" }).replace(" ", "T");
                 //console.log("DATE RN: " + submittedAt)
+
+                let userId;
+
+
+                try {
+                    const controller = new AbortController(); // ✅ Fix 1
+                    const timeoutId = setTimeout(() => controller.abort(), 8000); // 2s timeout
+
+                    const res = await fetch("https://leetcode.com/api/problems/algorithms/", {
+                        credentials: "include",
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId); // ✅ Safe to clear here
+                    const data = await res.json();
+                    userId = data.user_name;
+                    console.log("✅ User from fetch:", userId);
+
+                    if (!userId || userId === "") throw new Error("❌ Fetched userId is invalid");
+
+                } catch (e1) {
+                    console.warn("❌ Fetch failed, trying localStorage…", e1);
+                    try {
+                        // 2️⃣ Second – try localStorage
+                        const globalVal = JSON.parse(localStorage.getItem("GLOBAL_DATA:value"));
+                        const parsedUser = globalVal?.userStatus?.username;
+                        if (parsedUser) { // in JS "" is a falsly value (lol)
+                            userId = parsedUser;
+                            console.log("🪵 Fallback to localStorage:", userId);
+                        } else {
+                            throw new Error("❌ Parsed user from localStorage is invalid");
+                        }
+                        if (userId === "" || userId === null || userId === undefined) throw new Error("❌ localStorage fallback returned invalid userId");
+                    } catch (e2) {
+                        console.warn("⚠️ localStorage fallback failed:", e2);
+                        try {
+                            // 3️⃣ LAST RESORT – cookies
+
+                            showErrorPopup("Could not retrieve userID. Contact h82lzn if issue persists.");
+                            return;
+
+                        } catch (e3) {
+                            console.error("🚨 All userID resolution methods failed.", e3);
+                            showErrorPopup("Unexpected error when resolving userID. Contact h82lzn.");
+                            return;
+                        }
+
+                    }
+                }
+
+                const topics = extractTopics();
+                //console.log(topics.toString())
+                //console.log("✅ Unique LeetCode User ID:", userId);
+
+                const difficultyElement = document.querySelector('div.text-difficulty-easy, div.text-difficulty-medium, div.text-difficulty-hard');
+                let difficulty;
+                if (difficultyElement) {
+                    difficulty = difficultyElement.textContent.trim(); // "Easy", "Medium", or "Hard"
+                    //console.log("🧠 Difficulty:", difficulty);
+                }
+
+                // 1️⃣  Find the <a> element (adjust the selector if you need something stricter)
+                const anchor = document.querySelector(
+                    'a[href^="/problems/"][href$="/"]'
+                );
+                let problemName;
+                if (anchor) {
+                    /* 2️⃣  The textContent is like  "1. Two Sum"
+                           – split on the first dot or run a regex. */
+                    const match = anchor.textContent.match(/^(\d+)\s*\./);
+                    if (match) {
+                        const number = match[1].padStart(4, "0");
+                        const slugMatch = anchor.href.match(/\/problems\/([^/]+)\//);
+                        const slug = slugMatch ? slugMatch[1] : "unknown-problem";
+                        const fullName = `${number}-${slug}`;
+                        //todo: TEST THIS LINE
+                        problemName = fullName.length > 80 ? fullName.slice(0, 80) : fullName;
+
+                        //("✅ Problem ref:", problemName); // → 0001-two-sum
+                    } else {
+                        console.warn("Couldn’t parse a number from:", anchor.textContent);
+                    }
+                } else {
+                    console.warn("Anchor not found – check your selector.");
+                }
+
                 const payload = {
                     userID: userId,
                     submissionId: data.submission_id,

@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"sort"
 	"strings"
+	"time"
 )
 
 func addSubm(db *sql.DB) {
@@ -208,6 +209,20 @@ func GetUsernameByUserID(db *sql.DB, userID string) (string, error) {
 	return username, nil
 }
 
+func GetUserIDwithDiscordID(db *sql.DB, discordUserID string) (string, error) {
+	query := `SELECT user_id FROM users WHERE discord_user_id = ?`
+
+	var userID string
+	err := db.QueryRow(query, discordUserID).Scan(&userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("no user found for Discord ID %s", discordUserID)
+		}
+		return "", fmt.Errorf("query error: %v", err)
+	}
+	return userID, nil
+}
+
 func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 	query := `
 		SELECT u.user_id, u.username, s.difficulty, COUNT(*) 
@@ -389,26 +404,113 @@ func DeleteUserByDiscordID(db *sql.DB, discordUserID string) error {
 }
 
 func GetRandomSkewedLeetcode(db *sql.DB, userID string) string {
-	query := `SELECT problem_name,confidence_score FROM submissions WHERE user_id = ?`
+	query := `SELECT problem_name, confidence_score FROM submissions WHERE user_id = ? AND confidence_score <= 4`
+
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
-	row := stmt.QueryRow(userID)
-	var problemName []string
-	var confidenceScore []int
-	err = row.Scan(&problemName, &confidenceScore)
+
+	rows, err := stmt.Query(userID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var problemNames []string
+	var confidenceScores []int
+
+	for rows.Next() {
+		var pname string
+		var score int
+		if err := rows.Scan(&pname, &score); err != nil {
+			log.Fatal(err)
+		}
+		problemNames = append(problemNames, pname)
+		confidenceScores = append(confidenceScores, score)
+	}
+
+	if len(problemNames) == 0 {
+		log.Println("⚠️ No problems found for user.")
+		return ""
+	}
+
+	hashmap := map[int]int{
+		0: 100,
+		1: 100,
+		2: 90,
+		3: 50,
+		4: 2,
+		5: 0,
+	}
+
+	var randomLeet string
+	var score int
+
+	for {
+		randomNum := rand.Intn(len(problemNames))
+		randomLeet = problemNames[randomNum]
+		score = confidenceScores[randomNum]
+		rerollRandom := rand.Intn(100)
+
+		fmt.Println(rerollRandom, score)
+		fmt.Println(hashmap[score] + rerollRandom)
+		if rerollRandom+hashmap[score] >= 100 {
+			break
+		}
+	}
+
+	url := fmt.Sprintf("https://leetcode.com/problems/%s", randomLeet)
+	return url
+}
+
+func ResetMoLCA(db *sql.DB) {
+
+	query := `INSERT INTO users (monthly_leetcode) VALUES 0`
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	min := 0
-	max := len(problemName)
-	randomNum := rand.Intn(max-min+1) + min
-	randomLeet := problemName[randomNum]
+}
 
-	url := fmt.Sprintf("https://leetcode/problems/%s", randomLeet)
+func QueryAllSuerActivity(db *sql.DB) map[string]bool {
+	inactiveMap := make(map[string]bool)
 
-	return url
+	// Get latest submission timestamp for each user
+	query := `
+        SELECT username, user_id, MAX(timestamp) as latest
+        FROM submissions
+        GROUP BY user_id
+    `
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	now := time.Now()
+
+	for rows.Next() {
+		var userID string
+		var latestTime time.Time
+		var username string
+
+		if err := rows.Scan(&username, &userID, &latestTime); err != nil {
+			log.Printf("❌ Error scanning submission timestamp for user %s: %v", userID, err)
+			continue
+		}
+
+		if now.Sub(latestTime).Hours() > 96 { // 4 days
+			inactiveMap[username] = true
+		}
+	}
+
+	return inactiveMap
 }

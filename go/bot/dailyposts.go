@@ -12,7 +12,7 @@ import (
 func dailyposts(s *discordgo.Session) {
 	fmt.Println("✅ Daily post loop started")
 
-	sleep := 12 * time.Second
+	sleep := 12 * time.Hour
 
 	for {
 		now := time.Now()
@@ -81,20 +81,20 @@ func DisplayLeaderboard(leaderboard []db.LeaderEntry) string {
 
 func DisplayDailylc(stats []db.DailyStat) string {
 	var res strings.Builder
-	res.WriteString(fmt.Sprintf("📅 Day %d — Leetcode Activity Summary\n\n", time.Now().Day()))
+	res.WriteString(fmt.Sprintf("📅 Day %d — Daily Leetcode Records: \n\n", time.Now().Day()))
 
 	for _, stat := range stats {
 		total := stat.Easy + stat.Medium + stat.Hard
-		res.WriteString(fmt.Sprintf(" %s — ✅ %d solved today | 📆 %d this month\n", stat.Username, total, stat.MonthlyLC))
+		res.WriteString(fmt.Sprintf(" %s — **%d** today | **%d** total |", stat.Username, total, stat.MonthlyLC))
 
 		if stat.Easy > 0 {
-			res.WriteString(fmt.Sprintf("   🟩 Easy: %d D", stat.Easy))
+			res.WriteString(fmt.Sprintf("  🟩: %d", stat.Easy))
 		}
 		if stat.Medium > 0 {
-			res.WriteString(fmt.Sprintf("   🟨 Medium: %d ", stat.Medium))
+			res.WriteString(fmt.Sprintf("  🟨: %d ", stat.Medium))
 		}
 		if stat.Hard > 0 {
-			res.WriteString(fmt.Sprintf("   🟥 Hard: %d ", stat.Hard))
+			res.WriteString(fmt.Sprintf("  🟥: %d ", stat.Hard))
 		}
 		res.WriteString("\n")
 	}

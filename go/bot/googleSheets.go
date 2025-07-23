@@ -28,6 +28,8 @@ var scoreMap = map[int8]string{
 	5: "5 – Perfectly repeatable",
 }
 
+//TOD
+
 func getGoogleSheets() (*sheets.Service, error) {
 	ctx := context.Background()
 	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("go/credentials.json"))
@@ -310,7 +312,7 @@ func createNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) e
 	headers := &sheets.ValueRange{
 		Range: fmt.Sprintf("%s!A1:I1", title),
 		Values: [][]interface{}{{
-			"Problem", "Difficulty", "Confidence", "Date", "Time (min)", "Topics", "Notes", "Counter", "UserID",
+			"Problem", "Difficulty", "Confidence", "Date", "Time (min)", "Topics", "Notes",
 		}},
 	}
 	_, err = srv.Spreadsheets.Values.Update(spreadsheetID, headers.Range, headers).
@@ -534,6 +536,59 @@ func createNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) e
 	}).Do()
 	if err != nil {
 		return fmt.Errorf("failed to set validation or formatting: %v", err)
+	}
+
+	// Step 5: Adjust column widths and enable text wrapping for Notes column
+	_, err = srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			{
+				UpdateDimensionProperties: &sheets.UpdateDimensionPropertiesRequest{
+					Range: &sheets.DimensionRange{
+						SheetId:    sheetID,
+						Dimension:  "COLUMNS",
+						StartIndex: 0, // Column A (Problem)
+						EndIndex:   1,
+					},
+					Properties: &sheets.DimensionProperties{
+						PixelSize: 180, // about 2x default
+					},
+					Fields: "pixelSize",
+				},
+			},
+			{
+				UpdateDimensionProperties: &sheets.UpdateDimensionPropertiesRequest{
+					Range: &sheets.DimensionRange{
+						SheetId:    sheetID,
+						Dimension:  "COLUMNS",
+						StartIndex: 6, // Column G (Notes)
+						EndIndex:   7,
+					},
+					Properties: &sheets.DimensionProperties{
+						PixelSize: 360, // about 4x default
+					},
+					Fields: "pixelSize",
+				},
+			},
+			{
+				RepeatCell: &sheets.RepeatCellRequest{
+					Range: &sheets.GridRange{
+						SheetId:          sheetID,
+						StartRowIndex:    1,
+						StartColumnIndex: 6,
+						EndColumnIndex:   7,
+					},
+					Cell: &sheets.CellData{
+						UserEnteredFormat: &sheets.CellFormat{
+							WrapStrategy: "WRAP",
+						},
+					},
+					Fields: "userEnteredFormat.wrapStrategy",
+				},
+			},
+		},
+	}).Do()
+	if err != nil {
+		return fmt.Errorf("failed to set column widths and wrap: %v", err)
 	}
 
 	return nil

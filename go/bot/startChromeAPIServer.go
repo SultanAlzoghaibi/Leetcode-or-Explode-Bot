@@ -34,7 +34,7 @@ type Submission struct {
 	SubmittedAt     string   `json:"submittedAt"`  // ISO-8601 timestamp
 	ConfidenceScore uint8    `json:"confidenceScore"`
 	Notes           string   `json:"notes"`
-	SolveTime       uint8    `json:"solveTime"`
+	SolveTime       uint8    `json:"duration"`
 	Topics          []string `json:"topics"`
 }
 

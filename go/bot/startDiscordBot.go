@@ -25,7 +25,7 @@ func StartDiscordBot() {
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
 
-	// go dailyposts(sess) // temp oof  undo
+	go dailyposts(sess) // temp oof  undo
 	//TODO: UNDO
 
 	if err != nil {
@@ -126,7 +126,7 @@ func StartDiscordBot() {
 			}
 
 			// ✅ Check if user exists before proceeding
-			exists := db.DoesExist(db.DB, "users", "discord_id", i.Member.User.ID)
+			exists := db.DoesExist(db.DB, "users", "discord_user_id", i.Member.User.ID)
 			if !exists {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,

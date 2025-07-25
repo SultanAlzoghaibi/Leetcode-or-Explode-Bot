@@ -1,11 +1,4 @@
-terraform {
-  required_providers {
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "6.13.0"
-    }
-  }
-}
+
 resource "google_compute_subnetwork" "public" {
   name = "public"
   ip_cidr_range = "10.0.0.0/19" # search subnet calculator to see the range

@@ -1,17 +1,21 @@
 # ----- Stage 1: Build -----
 FROM golang:1.24-alpine AS builder
-RUN pwd
-WORKDIR /go
-RUN pwd
-COPY go.mod ./
+
+WORKDIR /app
+
+COPY go/go.mod ./
+COPY go/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY go/. ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o main
 
 # ----- Stage 2: Run -----
 FROM alpine:latest
-WORKDIR /root/
-COPY --from=builder /go/main .
+WORKDIR /app/
+COPY --from=builder /app/main .
+
+
+EXPOSE 9100
 
 CMD ["./main"]

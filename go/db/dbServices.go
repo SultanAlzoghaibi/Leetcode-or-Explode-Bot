@@ -404,7 +404,11 @@ func DeleteUserByDiscordID(db *sql.DB, discordUserID string) error {
 }
 
 func GetRandomSkewedLeetcode(db *sql.DB, userID string) string {
-	query := `SELECT problem_name, confidence_score FROM submissions WHERE user_id = ? AND confidence_score <= 4`
+	query := `SELECT problem_name, max(confidence_score) AS max_score
+FROM submissions 
+WHERE user_id = ?
+GROUP BY problem_name
+HAVING max_score < 5`
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -419,11 +423,11 @@ func GetRandomSkewedLeetcode(db *sql.DB, userID string) string {
 	defer rows.Close()
 
 	var problemNames []string
-	var confidenceScores []int
+	var confidenceScores []int8
 
 	for rows.Next() {
 		var pname string
-		var score int
+		var score int8
 		if err := rows.Scan(&pname, &score); err != nil {
 			log.Fatal(err)
 		}
@@ -436,17 +440,8 @@ func GetRandomSkewedLeetcode(db *sql.DB, userID string) string {
 		return ""
 	}
 
-	hashmap := map[int]int{
-		0: 100,
-		1: 100,
-		2: 90,
-		3: 50,
-		4: 2,
-		5: 0,
-	}
-
 	var randomLeet string
-	var score int
+	var score int8
 
 	for {
 		randomNum := rand.Intn(len(problemNames))
@@ -455,14 +450,23 @@ func GetRandomSkewedLeetcode(db *sql.DB, userID string) string {
 		rerollRandom := rand.Intn(100)
 
 		fmt.Println(rerollRandom, score)
-		fmt.Println(hashmap[score] + rerollRandom)
-		if rerollRandom+hashmap[score] >= 100 {
+		fmt.Println(ScoreToProbability[score] + rerollRandom)
+		if rerollRandom+ScoreToProbability[score] >= 100 {
 			break
 		}
 	}
 
 	url := fmt.Sprintf("https://leetcode.com/problems/%s", randomLeet)
 	return url
+}
+
+var ScoreToProbability = map[int8]int{
+	0: 100,
+	1: 100,
+	2: 90,
+	3: 50,
+	4: 2,
+	5: 0,
 }
 
 func ResetMoLCA(db *sql.DB) {

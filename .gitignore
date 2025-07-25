@@ -30,3 +30,8 @@ Thumbs.db
 
 
 go/credentials.json
+
+
+k8s/goServer-Deployement.yaml
+
+infra/terra/0-locals.tf

@@ -6,6 +6,8 @@ resource "google_compute_address" "nat" {
 
 }
 
+
+
 resource "google_compute_router" "router" {
   name = "router"
   region = local.region

@@ -1,6 +1,6 @@
 locals {
   project_id = "lcc-backend"
-  region = "us-central-1"
+  region = "us-central1-a"
   apis = [
     "compute.googleapis.com",
     "container.googleapis.com",

@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
     discord_server_id VARCHAR(32) NOT NULL,
     is_admin          BOOLEAN,
     monthly_leetcode  TINYINT UNSIGNED,
-    status            ENUM('NONE', 'DEFAULT', 'NO-PING', 'EXTREME')
+    status            ENUM('NONE', 'DEFAULT', 'NO-PING', 'EXTREME'),
+    streak			  INTEGER UNSIGNED
 )`
 
 	// Execute user table creation

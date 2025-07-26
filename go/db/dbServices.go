@@ -37,18 +37,22 @@ func AddUser(db *sql.DB,
 	status string,
 	discordUserID string,
 	discordServerID string,
-	username string) error {
+	username string,
+	streak uint,
+) error {
 
 	stmt, err := db.Prepare(`
-        INSERT INTO users (user_id, discord_user_id, username, discord_server_id, is_admin, monthly_leetcode, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (user_id, discord_user_id, username, discord_server_id, is_admin, monthly_leetcode, status, streak)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `)
 	if err != nil {
 		return fmt.Errorf("Adduser perspare user failde: %v", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(userID, discordUserID, username, discordServerID, isAdmin, monthlyLeetcode, status)
+	fmt.Println(streak)
+
+	_, err = stmt.Exec(userID, discordUserID, username, discordServerID, isAdmin, monthlyLeetcode, status, streak)
 	if err != nil {
 		return fmt.Errorf("execution failed: %v", err)
 	}
@@ -192,6 +196,7 @@ type DailyStat struct {
 	Hard       int    `json:"hard"`
 	TotalToday int    `json:"totalToday"`
 	MonthlyLC  uint8  `json:"monthlyLeetcode"`
+	Streak     uint   `json:"streak"`
 }
 
 func GetUsernameByUserID(db *sql.DB, userID string) (string, error) {
@@ -225,12 +230,13 @@ func GetUserIDwithDiscordID(db *sql.DB, discordUserID string) (string, error) {
 
 func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 	query := `
-		SELECT u.user_id, u.username, s.difficulty, COUNT(*) 
+		SELECT u.user_id, u.username, s.difficulty, COUNT(*)
 		FROM submissions s
 		JOIN users u ON s.user_id = u.user_id
 		WHERE DATE(s.timestamp) = ?
 		GROUP BY u.user_id, u.username, s.difficulty
 	`
+	//TODO: add steaks to this list incomplete
 
 	rows, err := db.Query(query, date)
 	if err != nil {
@@ -276,7 +282,9 @@ func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 	var result []DailyStat
 	for userID, s := range userStats {
 		var monthlyLC uint8
-		err := db.QueryRow("SELECT monthly_leetcode FROM users WHERE user_id = ?", userID).Scan(&monthlyLC)
+		var streak uint
+		err := db.QueryRow("SELECT monthly_leetcode, streak FROM users WHERE user_id = ?", userID).Scan(&monthlyLC, &streak)
+
 		if err != nil {
 			log.Printf("⚠️ Could not get monthly LC for user %s: %v", userID, err)
 		}
@@ -289,12 +297,14 @@ func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 			Hard:       s.Hard,
 			TotalToday: s.TotalToday,
 			MonthlyLC:  monthlyLC,
+			Streak:     streak,
 		})
 	}
 
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].TotalToday > result[j].TotalToday
 	})
+	// n log(n)
 
 	return result
 }
@@ -329,18 +339,14 @@ func getMoLCColumn(db *sql.DB, userID string) {
 	fmt.Printf("moLC column: %d \n", moLCAmount)
 }
 
-func resetMoLC(db *sql.DB) {
-	query := `INSERT INTO submissions (monthly_leetcode) VALUES 0`
-	stmt, err := db.Prepare(query)
+func IncrementStreak(db *sql.DB, userID string) error {
+	updateQuery := `UPDATE users SET streak = streak + 1 WHERE user_id = ?`
+
+	_, err := db.Exec(updateQuery, userID)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to increment streak for user %s: %w", userID, err)
 	}
-	defer stmt.Close()
-	_, err = stmt.Exec()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("monthy LC rest to 0")
+	return nil
 }
 
 type LeaderEntry struct {

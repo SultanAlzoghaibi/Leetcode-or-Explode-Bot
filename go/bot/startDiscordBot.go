@@ -2,6 +2,7 @@ package bot
 
 import (
 	"Leetcode-or-Explode-Bot/db"
+	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -87,7 +88,8 @@ func StartDiscordBot() {
 				"DEFAULT",
 				i.Member.User.ID,
 				i.GuildID,
-				i.Member.User.Username)
+				i.Member.User.Username,
+				0)
 			if err != nil {
 				if strings.Contains(err.Error(), "Error 1062") {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -287,3 +289,18 @@ func StartDiscordBot() {
 //todo: fix bug on first submission being error every time
 
 // TODO: Add a stat strater with telemary (aksii art wort comes to worse)
+
+func resetStreak(db *sql.DB, userID string) {
+	updateQuery := `UPDATE users SET streak = 0 WHERE user_id = ?`
+	stmt, err := db.Prepare(updateQuery)
+	if err != nil {
+		fmt.Println("Error resetting streak:", err)
+		return
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(userID)
+	if err != nil {
+		log.Println("Error resetting streak:", err)
+	}
+
+}

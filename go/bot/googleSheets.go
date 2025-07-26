@@ -28,7 +28,7 @@ var scoreMap = map[int8]string{
 	5: "5 – Perfectly repeatable",
 }
 
-//TOD
+//TODO BATCH ALL OF THESE TO HANDLE 3+ REQUESTS AT ONCE
 
 func getGoogleSheets() (*sheets.Service, error) {
 	ctx := context.Background()

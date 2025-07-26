@@ -135,7 +135,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func StartChromeAPIServer() {
-	http.HandleFunc("/", lcSubmissionHandler)
+	http.HandleFunc("/", lcSubmissionHandler) //todo PROD change to /api/chrome
 	http.ListenAndServe(":9100", nil)
 
 }

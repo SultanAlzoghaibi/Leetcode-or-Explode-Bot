@@ -1,6 +1,6 @@
 resource "google_container_cluster" "gke" {
   name = "lcc-backend"
-  location = local.region
+  location = local.zone
   remove_default_node_pool = true
   initial_node_count = 1
   network = google_compute_network.vpc.self_link

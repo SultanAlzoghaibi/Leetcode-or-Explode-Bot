@@ -59,8 +59,15 @@ func (d *Difficulty) UnmarshalJSON(b []byte) error {
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("we got a submission")
-	w.Header().Set("Access-Control-Allow-Origin",
-		"chrome-extension://bphfdocncclgepoiabbjodikpeegopfd")
+	validOrigins := map[string]bool{
+		"chrome-extension://bphfdocncclgepoiabbjodikpeegopfd": true,
+		"chrome-extension://lffamldlgnnlimjpggjcphdocgjbflna": true,
+	}
+	origin := r.Header.Get("Origin")
+	if validOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
+	//TODO ADD the new chrome extension ID
 
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -95,8 +102,6 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("✅ Submission received:\n%+v\n", submission)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Received"))
 
 	database := db.DB
 
@@ -118,6 +123,16 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	//TODO: pu this into a function as its messy out here
 
 	//Todo: have a check that if the User is not in the DB, pop up warning is called
+
+	if !db.DoesExist(database, "submission", "user_id", submission.UserID) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("the user has never signed up via our discord bot, contact h82luzn on discord for more information"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Received"))
+
 	db.AddSubm(database,
 		submission.SubmissionID,
 		submission.ProblemName,

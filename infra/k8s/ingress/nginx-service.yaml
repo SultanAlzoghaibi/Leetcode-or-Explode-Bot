@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ingress-service
+  namespace: ingress-nginx
+  annotations:
+    networking.gke.io/load-balancer-ipv4-address: "34.16.123.158"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 34.16.123.158
+  selector:
+    app: nginx-ingress
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443

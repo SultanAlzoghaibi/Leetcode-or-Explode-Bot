@@ -20,7 +20,7 @@ func main() {
 }
 
 func recoverer(maxPanics, id int, f func()) {
-
+	// from stackoverflow
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("HERE", id)

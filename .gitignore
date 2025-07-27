@@ -34,4 +34,6 @@ go/credentials.json
 
 k8s/goServer-Deployement.yaml
 
-infra/terra/0-locals.tf
+infra/terra/info.tfvars
+*tfvars
+infra/k8s/info.yaml

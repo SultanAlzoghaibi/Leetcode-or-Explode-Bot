@@ -8,7 +8,7 @@ COPY go/go.sum ./
 RUN go mod download
 
 COPY go/. ./
-RUN CGO_ENABLED=0 GOOS=linux go build -o main
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main
 
 # ----- Stage 2: Run -----
 FROM alpine:latest

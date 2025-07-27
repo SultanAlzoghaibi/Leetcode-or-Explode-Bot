@@ -150,9 +150,12 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func StartChromeAPIServer() {
-	http.HandleFunc("/", lcSubmissionHandler) //todo PROD change to /api/chrome
-	http.ListenAndServe(":9100", nil)
+	http.HandleFunc("/api/chrome", lcSubmissionHandler)
 
+	fmt.Println("✅ Chrome API server listening on port 9100")
+	if err := http.ListenAndServe(":9100", nil); err != nil {
+		log.Fatalf("❌ Failed to start Chrome API server: %v", err)
+	}
 }
 
 func tableExists(db *sql.DB, tableName string) (bool, error) {

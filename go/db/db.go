@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql" // Required for mysql driver
 	"github.com/joho/godotenv"
 	"log"
@@ -12,10 +13,14 @@ var DB *sql.DB // Global exported variable
 
 func Init() {
 	if os.Getenv("ENV") != "production" {
+		fmt.Println("Loading environment variables from .env file")
 		_ = godotenv.Load() // Only load .env locally
 	}
 
 	dsn := os.Getenv("DNS_DB")
+
+	fmt.Printf("dsn:", dsn[22:])
+
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("❌ Failed to open DB: %v", err)

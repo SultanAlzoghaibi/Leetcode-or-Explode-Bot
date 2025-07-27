@@ -4,10 +4,10 @@ metadata:
   name: nginx-ingress-service
   namespace: ingress-nginx
   annotations:
-    networking.gke.io/load-balancer-ipv4-address: "34.16.123.158"
+    networking.gke.io/load-balancer-ipv4-address: "34.132.166.159"
 spec:
   type: LoadBalancer
-  loadBalancerIP: 34.16.123.158
+  loadBalancerIP: 34.132.166.159
   selector:
     app: nginx-ingress
   ports:

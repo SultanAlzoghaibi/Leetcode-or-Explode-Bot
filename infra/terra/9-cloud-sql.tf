@@ -32,8 +32,8 @@ resource "google_sql_database_instance" "instance" {
       private_network = google_compute_network.vpc.self_link
     }
   }
-
-  deletion_protection  = true
+  //todo set tru fro prod
+  deletion_protection  = false
   depends_on = [
     google_service_networking_connection.private_vpc_connection
   ]
@@ -53,11 +53,14 @@ resource "google_project_service" "sqladmin" {
 }
 
 resource "google_project_service" "compute" {
-  service = "compute.googleapis.com"
+  service                     = "compute.googleapis.com"
+  disable_on_destroy          = true
+  disable_dependent_services  = true
 }
 
 resource "google_project_service" "servicenetworking" {
   service = "servicenetworking.googleapis.com"
 }
+
 
 

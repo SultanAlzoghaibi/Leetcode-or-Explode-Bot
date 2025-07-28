@@ -248,7 +248,7 @@ func StartDiscordBot() {
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "value",
-					Description: "Choose your ping status",
+					Description: "Choose your ping status (coming soon)",
 					Required:    true,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
 						{

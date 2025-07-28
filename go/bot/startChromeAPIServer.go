@@ -141,6 +141,10 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Received"))
+	if db.SameDaySubm(database, submission.ProblemName, submission.UserID) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("the submission already exists today"))
+	}
 
 	db.AddSubm(database,
 		submission.SubmissionID,

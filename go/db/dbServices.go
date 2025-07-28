@@ -16,7 +16,27 @@ func addSubm(db *sql.DB) {
 	// TODO: implement submission insert logic here
 }
 
-//3306
+// 3306
+func SameDaySubm(db *sql.DB, problemName string, userID string) bool {
+	today := time.Now().Format("2006-01-02")
+
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM submissions 
+			WHERE problem_name = ? 
+			  AND user_id = ? 
+			  AND DATE(timestamp) = ?
+		)
+	`
+
+	var exists bool
+	err := db.QueryRow(query, problemName, userID, today).Scan(&exists)
+	if err != nil {
+		log.Println("DB error:", err)
+		return true // fail-safe: assume exists
+	}
+	return exists
+}
 
 func DoesExist(db *sql.DB, table, column, key string) bool {
 

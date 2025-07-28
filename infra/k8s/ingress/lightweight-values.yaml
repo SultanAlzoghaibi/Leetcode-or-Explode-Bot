@@ -1,0 +1,16 @@
+controller:
+  service:
+    loadBalancerIP: "34.132.166.159"
+    annotations:
+      networking.gke.io/load-balancer-ipv4-address: "34.132.166.159"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 90Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  admissionWebhooks:
+    enabled: false
+  metrics:
+    enabled: false

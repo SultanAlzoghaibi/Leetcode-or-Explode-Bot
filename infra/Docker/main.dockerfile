@@ -13,8 +13,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main
 # ----- Stage 2: Run -----
 FROM alpine:latest
 WORKDIR /app/
-COPY --from=builder /app/main .
 
+COPY --from=builder /app/main .
+COPY go/credentials.json ./credentials.json
 
 EXPOSE 9100
 

@@ -9,7 +9,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     console.log("Extension ID:", chrome.runtime.id);
 
-  fetch("https://44a7d6a27a27.ngrok.app", {
+  fetch("https://leetcode-or-explode.com/api/chrome", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.data)

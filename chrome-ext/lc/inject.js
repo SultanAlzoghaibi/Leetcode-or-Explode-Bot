@@ -114,9 +114,10 @@ window.fetch =  async (...args) => {
                 //console.log("✅ Unique LeetCode User ID:", userId);
 
                 const difficultyElement = document.querySelector('div.text-difficulty-easy, div.text-difficulty-medium, div.text-difficulty-hard');
-                let difficulty;
+                let difficulty = "MEDIUM";
                 if (difficultyElement) {
                     difficulty = difficultyElement.textContent.trim(); // "Easy", "Medium", or "Hard"
+                    console.log("diffculty: ",difficulty)
                     //console.log("🧠 Difficulty:", difficulty);
                 }
 

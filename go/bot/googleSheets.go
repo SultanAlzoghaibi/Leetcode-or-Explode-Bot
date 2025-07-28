@@ -32,7 +32,7 @@ var scoreMap = map[int8]string{
 
 func getGoogleSheets() (*sheets.Service, error) {
 	ctx := context.Background()
-	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("go/credentials.json"))
+	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("credentials.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func addtoSheets(subm Submission) {
 
 	// Create Sheets service using service account credentials
 	srv, err := sheets.NewService(ctx,
-		option.WithCredentialsFile("go/credentials.json"),
+		option.WithCredentialsFile("credentials.json"),
 		option.WithScopes(sheets.SpreadsheetsScope),
 	)
 	if err != nil {

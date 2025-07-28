@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"syscall"
 )
@@ -26,11 +27,12 @@ func StartDiscordBot() {
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
 
-	go dailyposts(sess) // temp oof  undo
+	// go dailyposts(sess) // temp oof  undo
 	//TODO: UNDO
 
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
+		fmt.Println("Stack trace:\n", string(debug.Stack()))
 	}
 	sess.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		//todo: verify that this thread depedan ton the seshpoing being active
@@ -200,6 +202,11 @@ func StartDiscordBot() {
 	sess.Identify.Intents = discordgo.IntentsGuildMessages
 
 	err = sess.Open()
+	if err != nil {
+		fmt.Println("Failed to open session:", err)
+		fmt.Println("Stack trace:\n", string(debug.Stack()))
+		return
+	}
 	// Register slash commands -------------------------------
 	commands := []*discordgo.ApplicationCommand{
 		{
@@ -277,7 +284,7 @@ func StartDiscordBot() {
 	if err != nil {
 		fmt.Println("Error opening connection,", err)
 	}
-	defer sess.Close()
+	//defer sess.Close()
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 
 	sc := make(chan os.Signal, 1)

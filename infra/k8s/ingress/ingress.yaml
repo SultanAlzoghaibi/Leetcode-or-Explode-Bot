@@ -6,12 +6,13 @@ metadata:
     kubernetes.io/ingress.class: "nginx"  # or "nginx" if you're using NGINX
 spec:
   rules:
-    - http:
+    - host: leetcode-or-explode.com
+      http:
         paths:
-          - path: /
+          - path: /api/chrome
             pathType: Prefix
             backend:
               service:
-                name: lcc-backend
+                name: lcc-backend-service
                 port:
-                  number: 9100
+                  number: 80

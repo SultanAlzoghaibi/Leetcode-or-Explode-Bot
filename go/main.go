@@ -14,7 +14,7 @@ func main() {
 	fmt.Println("main started")
 	db.Init()
 	go recoverer(100, 1, bot.StartChromeAPIServer)
-	//go recoverer(100, 2, bot.StartDiscordBot)
+	go recoverer(100, 2, bot.StartDiscordBot)
 
 	select {} // cleaner than Sleep for long-running goroutines
 }

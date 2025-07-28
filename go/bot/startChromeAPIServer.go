@@ -58,29 +58,37 @@ func (d *Difficulty) UnmarshalJSON(b []byte) error {
 }
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("we got a submission")
+	fmt.Println("📩 we got a submission")
+
 	validOrigins := map[string]bool{
 		"chrome-extension://bphfdocncclgepoiabbjodikpeegopfd": true,
 		"chrome-extension://lffamldlgnnlimjpggjcphdocgjbflna": true,
 	}
+
 	origin := r.Header.Get("Origin")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Vary", "Origin")
 	if validOrigins[origin] {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 	}
-	//TODO ADD the new chrome extension ID
-
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
+		if validOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.WriteHeader(http.StatusOK)
+		} else {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
 		return
 	}
-	if r.Method != http.MethodPost {
-		log.Println("❌ Rejected non-POST request")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+
+	if !validOrigins[origin] {
+		log.Printf("❌ Rejected CORS request from origin: %s\n", origin)
+		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
 
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -89,7 +97,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(string(body))
+	fmt.Println("📦 Raw body:", string(body))
 
 	var submission Submission
 
@@ -124,7 +132,8 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 	//Todo: have a check that if the User is not in the DB, pop up warning is called
 
-	if !db.DoesExist(database, "submission", "user_id", submission.UserID) {
+	if !db.DoesExist(database, "users", "user_id", submission.UserID) {
+		fmt.Println("!db.DoesExist(database, \"submissions\", \"user_id\", submission.UserID)")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("the user has never signed up via our discord bot, contact h82luzn on discord for more information"))
 		return
@@ -145,6 +154,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	//printDB(database)
+
 	addtoSheets(submission)
 
 }
@@ -152,10 +162,10 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 func StartChromeAPIServer() {
 	http.HandleFunc("/api/chrome", lcSubmissionHandler)
 
-	fmt.Println("✅ Chrome API server listening on port 9100")
 	if err := http.ListenAndServe(":9100", nil); err != nil {
 		log.Fatalf("❌ Failed to start Chrome API server: %v", err)
 	}
+	fmt.Println("✅ Chrome API server listening on port 9100")
 }
 
 func tableExists(db *sql.DB, tableName string) (bool, error) {

@@ -17,24 +17,33 @@ func addSubm(db *sql.DB) {
 }
 
 // 3306
-func SameDaySubm(db *sql.DB, problemName string, userID string) bool {
-	today := time.Now().Format("2006-01-02")
+// Use the submittedAt timestamp to extract the date
+func SameDaySubm(db *sql.DB, problemName, userID string, submittedAt string) bool {
+
+	t, err := time.Parse("2006-01-02T15:04:05", submittedAt)
+	if err != nil {
+		log.Println("❌ Failed to parse SubmittedAt:", err)
+		return true
+	}
+
+	dateOnly := t.Format("2006-01-02") // Strip to date only
 
 	query := `
 		SELECT EXISTS (
-			SELECT 1 FROM submissions 
-			WHERE problem_name = ? 
-			  AND user_id = ? 
+			SELECT 1 FROM submissions
+			WHERE problem_name = ?
+			  AND user_id = ?
 			  AND DATE(timestamp) = ?
 		)
 	`
-
 	var exists bool
-	err := db.QueryRow(query, problemName, userID, today).Scan(&exists)
+	err = db.QueryRow(query, problemName, userID, dateOnly).Scan(&exists)
 	if err != nil {
 		log.Println("DB error:", err)
-		return true // fail-safe: assume exists
+		return false // fail open
 	}
+
+	fmt.Println("🚫 Already submitted today?", exists)
 	return exists
 }
 
@@ -249,6 +258,16 @@ func GetUserIDwithDiscordID(db *sql.DB, discordUserID string) (string, error) {
 }
 
 func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
+	t, err := time.Parse("2006-01-02T15:04:05", date)
+	if err != nil {
+		t, err = time.Parse("2006-01-02", date)
+		if err != nil {
+			log.Println("❌ Failed to parse date:", err)
+			return nil
+		}
+	}
+	date = t.Format("2006-01-02")
+
 	query := `
 		SELECT u.user_id, u.username, s.difficulty, COUNT(*)
 		FROM submissions s

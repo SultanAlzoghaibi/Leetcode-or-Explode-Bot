@@ -5,43 +5,43 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"log"
 	"strings"
 	"time"
+	_ "time/tzdata"
 )
 
 func dailyposts(s *discordgo.Session) {
 	fmt.Println("✅ Daily post loop started")
 
-	sleep := 12 * time.Second
+	loc, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		log.Fatalf("❌ Failed to load timezone: %v", err)
+	}
 
 	for {
-		now := time.Now()
+		now := time.Now().In(loc)
 		date := now.Format("2006-01-02")
+		fmt.Printf("📅 Date: %s\n", date)
 
-		// 1. Get stats
+		// ----------- Do daily stuff immediately -----------
 		dailyStats := db.GetAllDailyLeets(db.DB, date)
-		fmt.Println(dailyStats)
+		fmt.Println("dailyStats: ", dailyStats)
 
-		// 2. Send daily stats message to a channel
 		s.ChannelMessageSend("1395556314951974972", DisplayDailylc(dailyStats))
-		//TODO: change these to being the new discord Serverg
+		s.ChannelMessageSend("1395556365623234600", DisplayLeaderboard(db.GetLeaderboard(db.DB)))
 
-		// 3. Send leaderboard
-		leaderboardmsg := DisplayLeaderboard(db.GetLeaderboard(db.DB))
-		s.ChannelMessageSend("1395556365623234600", leaderboardmsg)
-
-		currentMonth := now.Month()
-
-		time.Sleep(sleep) // 12 hours
-		//wasInative(db.DB, db.QueryAllSuerActivity(db.DB), s) //TODO commin soon feature of reminders
-		time.Sleep(sleep) // 12 hours
-
-		lastRecordedMonth := now.Month()
-
-		if currentMonth != lastRecordedMonth {
+		// Reset monthly LC if month changed
+		if now.Day() == 1 {
 			db.ResetMoLCA(db.DB)
 		}
 
+		// ----------- Sleep until next day -----------
+		nextRun := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, loc)
+		sleepDuration := time.Until(nextRun)
+		fmt.Printf("😴 Sleeping %v until next daily run at %v\n", sleepDuration, nextRun)
+
+		time.Sleep(sleepDuration)
 	}
 }
 

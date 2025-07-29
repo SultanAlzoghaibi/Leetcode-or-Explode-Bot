@@ -27,7 +27,7 @@ func StartDiscordBot() {
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
 
-	// go dailyposts(sess) // temp oof  undo
+	go dailyposts(sess) // temp oof  undo
 	//TODO: UNDO
 
 	if err != nil {
@@ -241,42 +241,48 @@ func StartDiscordBot() {
 			Name:        "random-leetcode",
 			Description: "Get a radome Leetcode with skewed probability in favour of least confident past Leetcodes",
 		},
-		{
-			Name:        "status",
-			Description: "Change your ping status (DEFAULT or NO-PING)",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "value",
-					Description: "Choose your ping status (coming soon)",
-					Required:    true,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "DEFAULT",
-							Value: "DEFAULT",
-						},
-						{
-							Name:  "NO-PING",
-							Value: "NO-PING",
-						},
-					},
-				},
-			},
-		},
+		//{
+		//	Name:        "status",
+		//	Description: "Change your ping status (DEFAULT or NO-PING)",
+		//	Options: []*discordgo.ApplicationCommandOption{
+		//		{
+		//			Type:        discordgo.ApplicationCommandOptionString,
+		//			Name:        "value",
+		//			Description: "Choose your ping status (coming soon)",
+		//			Required:    true,
+		//			Choices: []*discordgo.ApplicationCommandOptionChoice{
+		//				{
+		//					Name:  "DEFAULT",
+		//					Value: "DEFAULT",
+		//				},
+		//				{
+		//					Name:  "NO-PING",
+		//					Value: "NO-PING",
+		//				},
+		//			},
+		//		},
+		//	},
+		//},
+	}
+	serverIDs := []string{
+		"1392352918425960509", // old server
+		"1377097284633886771", // new server
 	}
 
-	for _, cmd := range commands {
-		_, err := sess.ApplicationCommandCreate(sess.State.User.ID, "1392352918425960509", cmd)
+	for _, guildID := range serverIDs {
+		for _, cmd := range commands {
+			_, err := sess.ApplicationCommandCreate(sess.State.User.ID, guildID, cmd)
+			if err != nil {
+				fmt.Printf("❌ Cannot create slash command '%s' in guild %s: %v\n", cmd.Name, guildID, err)
+			}
+		}
+
+		err := sess.GuildMemberNickname(guildID, "@me", "Leetcode Warden 😭")
 		if err != nil {
-			fmt.Printf("❌ Cannot create slash command '%s': %v\n", cmd.Name, err)
+			fmt.Printf("❌ Failed to set nickname in guild %s: %v\n", guildID, err)
 		}
 	}
 	// --------------------- End of commands -----------------------
-
-	err = sess.GuildMemberNickname("1392352918425960509", "@me", "Leetcode Warden 😭")
-	if err != nil {
-		fmt.Println("Error creating nickname", err)
-	}
 
 	if err != nil {
 		fmt.Println("❌ Failed to update nickname:", err)

@@ -12,36 +12,43 @@ import (
 )
 
 func dailyposts(s *discordgo.Session) {
+
 	fmt.Println("✅ Daily post loop started")
 
 	loc, err := time.LoadLocation("America/Los_Angeles")
 	if err != nil {
 		log.Fatalf("❌ Failed to load timezone: %v", err)
+
 	}
 
 	for {
+		// ----------- Sleep until 11:59 PM -----------
 		now := time.Now().In(loc)
+		nextRun := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 0, 0, loc)
+		if now.After(nextRun) {
+			// If it's already past 11:59 PM today, schedule for tomorrow
+			nextRun = nextRun.Add(24 * time.Hour)
+		}
+		sleepDuration := time.Until(nextRun)
+		fmt.Printf("😴 Sleeping %v until 11:59 PM daily run at %v\n", sleepDuration, nextRun)
+		time.Sleep(sleepDuration)
+
+		// ----------- Now that it’s 11:59 PM, recalculate date -----------
+		now = time.Now().In(loc)
 		date := now.Format("2006-01-02")
 		fmt.Printf("📅 Date: %s\n", date)
 
-		// ----------- Do daily stuff immediately -----------
+		// ----------- Do daily stuff -----------
 		dailyStats := db.GetAllDailyLeets(db.DB, date)
 		fmt.Println("dailyStats: ", dailyStats)
 
-		s.ChannelMessageSend("1395556314951974972", DisplayDailylc(dailyStats))
-		s.ChannelMessageSend("1395556365623234600", DisplayLeaderboard(db.GetLeaderboard(db.DB)))
+		s.ChannelMessageSend("1399588861461659678", DisplayDailylc(dailyStats))
+		s.ChannelMessageSend("1399588897595588638", DisplayLeaderboard(db.GetLeaderboard(db.DB)))
 
 		// Reset monthly LC if month changed
 		if now.Day() == 1 {
 			db.ResetMoLCA(db.DB)
 		}
-
-		// ----------- Sleep until next day -----------
-		nextRun := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, loc)
-		sleepDuration := time.Until(nextRun)
-		fmt.Printf("😴 Sleeping %v until next daily run at %v\n", sleepDuration, nextRun)
-
-		time.Sleep(sleepDuration)
 	}
 }
 

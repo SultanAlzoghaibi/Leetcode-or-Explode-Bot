@@ -21,7 +21,7 @@ func TestSameDaySubm(t *testing.T) {
 		WithArgs(today).
 		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(true))
 
-	exists := db.SameDaySubm(mockDB, "two-sum", "user123")
+	exists := db.SameDaySubm(mockDB, "two-sum", "user123", today)
 
 	// Check result
 	if !exists {

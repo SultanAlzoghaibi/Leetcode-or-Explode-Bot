@@ -32,8 +32,8 @@ resource "google_sql_database_instance" "instance" {
       private_network = google_compute_network.vpc.self_link
     }
   }
-  //todo set tru fro prod
-  deletion_protection  = false
+  //true in  prod
+  deletion_protection  = true
   depends_on = [
     google_service_networking_connection.private_vpc_connection
   ]

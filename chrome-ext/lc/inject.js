@@ -135,7 +135,6 @@ window.fetch =  async (...args) => {
                         const slugMatch = anchor.href.match(/\/problems\/([^/]+)\//);
                         const slug = slugMatch ? slugMatch[1] : "unknown-problem";
                         const fullName = `${number}-${slug}`;
-                        //todo: TEST THIS LINE
                         problemName = fullName.length > 80 ? fullName.slice(0, 80) : fullName;
 
                         //("✅ Problem ref:", problemName); // → 0001-two-sum

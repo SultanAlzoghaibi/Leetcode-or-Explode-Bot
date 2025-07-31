@@ -16,6 +16,7 @@ func Init() {
 		fmt.Println("Loading environment variables from .env file")
 		_ = godotenv.Load() // Only load .env locally
 	}
+	// load the env file from a tmeporatry test file durung tests
 
 	dsn := os.Getenv("DNS_DB")
 

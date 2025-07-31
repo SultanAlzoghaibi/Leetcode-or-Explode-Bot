@@ -64,15 +64,6 @@ func StartDiscordBot() {
 
 			lcUsername := i.ApplicationCommandData().Options[0].StringValue()
 
-			var sheets *sheets.Service
-
-			sheets, err = getGoogleSheets()
-			if err != nil {
-				fmt.Println("❌ Failed to initialize Google Sheets client:", err)
-				return
-			}
-			createNewSheetWithTitle(sheets, spreadsheetID, i.Member.User.Username)
-
 			if db.DoesExist(db.DB, "users", "user_id", lcUsername) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -82,6 +73,15 @@ func StartDiscordBot() {
 				})
 				return
 			}
+
+			var sheets *sheets.Service
+
+			sheets, err = getGoogleSheets()
+			if err != nil {
+				fmt.Println("❌ Failed to initialize Google Sheets client:", err)
+				return
+			}
+			go createNewSheetWithTitle(sheets, spreadsheetID, i.Member.User.Username)
 
 			err := db.AddUser(db.DB,
 				lcUsername,
@@ -105,8 +105,6 @@ func StartDiscordBot() {
 				}
 				fmt.Println("❌ Failed to add user:", err)
 			}
-
-			//
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -272,6 +270,7 @@ func StartDiscordBot() {
 	for _, guildID := range serverIDs {
 		for _, cmd := range commands {
 			_, err := sess.ApplicationCommandCreate(sess.State.User.ID, guildID, cmd)
+
 			if err != nil {
 				fmt.Printf("❌ Cannot create slash command '%s' in guild %s: %v\n", cmd.Name, guildID, err)
 			}
@@ -290,7 +289,7 @@ func StartDiscordBot() {
 	if err != nil {
 		fmt.Println("Error opening connection,", err)
 	}
-	//defer sess.Close()
+	defer sess.Close()
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 
 	sc := make(chan os.Signal, 1)

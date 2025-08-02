@@ -37,3 +37,5 @@ k8s/goServer-Deployement.yaml
 infra/terra/info.tfvars
 *tfvars
 infra/k8s/info.yaml
+
+/go/cybersec/

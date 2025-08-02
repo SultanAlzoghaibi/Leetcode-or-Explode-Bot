@@ -34,8 +34,8 @@ func dailyposts(s *discordgo.Session) {
 		time.Sleep(sleepDuration)
 
 		// ----------- Now that it’s 11:59 PM, recalculate date -----------
-		now = time.Now().In(loc)
-		date := now.Format("2006-01-02")
+		runDate := nextRun.In(loc)
+		date := runDate.Format("2006-01-02")
 		fmt.Printf("📅 Date: %s\n", date)
 
 		// ----------- Do daily stuff -----------
@@ -46,7 +46,7 @@ func dailyposts(s *discordgo.Session) {
 		s.ChannelMessageSend("1399588897595588638", DisplayLeaderboard(db.GetLeaderboard(db.DB)))
 
 		// Reset monthly LC if month changed
-		if now.Day() == 1 {
+		if now.Add(1*time.Hour).Day() == 1 {
 			db.ResetMoLCA(db.DB)
 		}
 	}

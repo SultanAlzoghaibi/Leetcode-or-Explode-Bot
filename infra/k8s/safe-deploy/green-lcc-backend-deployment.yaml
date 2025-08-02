@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: green-lcc-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: green-lcc-backend
+  template:
+    metadata:
+      labels:
+        app: green-lcc-backend
+    spec:
+      containers:
+        - name: lcc-backend
+          image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/core-api:latest
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "50m"
+          ports:
+            - containerPort: 9100
+          # NEVER for minikube and always for cloud
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: bot-info
+          env:
+            - name: ENV
+              value: "production"
+

@@ -515,18 +515,18 @@ var ScoreToProbability = map[int8]int{
 }
 
 func ResetMoLCA(db *sql.DB) {
-
-	query := `INSERT INTO users (monthly_leetcode) VALUES 0`
+	query := `UPDATE users SET monthly_leetcode = 0`
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
+
 	_, err = stmt.Exec()
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	log.Println("✅ Monthly LC reset to 0 for all users")
 }
 
 func QueryAllSuerActivity(db *sql.DB) map[string]bool {

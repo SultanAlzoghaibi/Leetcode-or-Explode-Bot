@@ -91,6 +91,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 
 	body, err := ioutil.ReadAll(r.Body)
+
 	defer r.Body.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -161,7 +162,6 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	//printDB(database)
-
 	addtoSheets(submission)
 
 }

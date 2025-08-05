@@ -1,13 +1,14 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Ignore anything except the submission payload we expect
+    console.log("📩 Background received message:", message);
   if (message?.type !== "POST_SUBMISSION") {
     return;                // nothing to do
   }
 
   console.log("📦 background: received POST_SUBMISSION", message.data);
     console.log("Extension ID:", chrome.runtime.id);
-
-  fetch("https://leetcode-or-explode.com/api/chrome", {
+   //todo set to  https://leetcode-or-explode.com/api/chrome
+  fetch("https://c5ef653f405d.ngrok.app/api/chrome", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.data)

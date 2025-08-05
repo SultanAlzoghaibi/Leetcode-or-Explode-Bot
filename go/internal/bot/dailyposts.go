@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"Leetcode-or-Explode-Bot/db"
+	db2 "Leetcode-or-Explode-Bot/internal/db"
 	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
@@ -39,15 +39,15 @@ func dailyposts(s *discordgo.Session) {
 		fmt.Printf("📅 Date: %s\n", date)
 
 		// ----------- Do daily stuff -----------
-		dailyStats := db.GetAllDailyLeets(db.DB, date)
+		dailyStats := db2.GetAllDailyLeets(db2.DB, date)
 		fmt.Println("dailyStats: ", dailyStats)
 
 		s.ChannelMessageSend("1399588861461659678", DisplayDailylc(dailyStats))
-		s.ChannelMessageSend("1399588897595588638", DisplayLeaderboard(db.GetLeaderboard(db.DB)))
+		s.ChannelMessageSend("1399588897595588638", DisplayLeaderboard(db2.GetLeaderboard(db2.DB)))
 
 		// Reset monthly LC if month changed
 		if now.Add(1*time.Hour).Day() == 1 {
-			db.ResetMoLCA(db.DB)
+			db2.ResetMoLCA(db2.DB)
 		}
 	}
 }
@@ -70,11 +70,12 @@ type LeaderEntry struct {
 	MoLCAmount uint8
 }
 
-func DisplayLeaderboard(leaderboard []db.LeaderEntry) string {
+func DisplayLeaderboard(leaderboard []db2.LeaderEntry) string {
 	var res strings.Builder
 	emojis := []string{"🥇", "🥈", "🥉"}
 
 	res.WriteString("📊 Daily Leaderboard:\n")
+
 	for i, entry := range leaderboard {
 		var rank string
 		if i < len(emojis) {
@@ -88,18 +89,20 @@ func DisplayLeaderboard(leaderboard []db.LeaderEntry) string {
 	return res.String()
 }
 
-func DisplayDailylc(stats []db.DailyStat) string {
+func DisplayDailylc(stats []db2.DailyStat) string {
 	var res strings.Builder
-	res.WriteString(fmt.Sprintf("📅 Day %d — Daily Leetcode Records: \n\n", time.Now().Day()))
+	loc, _ := time.LoadLocation("America/Los_Angeles")
+	now := time.Now().In(loc)
+	res.WriteString(fmt.Sprintf("📅 Day %d — Daily Leetcode Records: \n\n", now))
 
 	for _, stat := range stats {
 
 		total := stat.Easy + stat.Medium + stat.Hard
 
 		if total == 0 {
-			resetStreak(db.DB, stat.UserID)
+			resetStreak(db2.DB, stat.UserID)
 		} else {
-			db.IncrementStreak(db.DB, stat.UserID)
+			db2.IncrementStreak(db2.DB, stat.UserID)
 		}
 
 		res.WriteString(fmt.Sprintf(" %s — **%d** today | **%d** this month:\n", stat.Username, total, stat.MonthlyLC))

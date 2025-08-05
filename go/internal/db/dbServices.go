@@ -409,7 +409,7 @@ func GetLeaderboard(db *sql.DB) []LeaderEntry {
 
 	var leaderboard []LeaderEntry
 
-	for i := 0; i < 3 && rows.Next(); i++ {
+	for rows.Next() {
 		var username string
 		var moLCAmount uint8
 		err = rows.Scan(&username, &moLCAmount)

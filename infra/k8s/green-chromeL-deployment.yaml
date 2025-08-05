@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: green-lcc-backend
+  name: green-chromel
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
-      app: green-lcc-backend
+      app: green-chromel
   template:
     metadata:
       labels:
-        app: green-lcc-backend
+        app: green-chromel
     spec:
       containers:
-        - name: lcc-backend
-          image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/core-api:latest
+        - name: chromel
+          image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/chrome-listener:latest
           resources:
             requests:
               memory: "50Mi"

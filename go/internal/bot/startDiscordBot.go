@@ -1,7 +1,8 @@
 package bot
 
 import (
-	"Leetcode-or-Explode-Bot/db"
+	db2 "Leetcode-or-Explode-Bot/internal/db"
+	"Leetcode-or-Explode-Bot/internal/shared"
 	"database/sql"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
@@ -64,7 +65,7 @@ func StartDiscordBot() {
 
 			lcUsername := i.ApplicationCommandData().Options[0].StringValue()
 
-			if db.DoesExist(db.DB, "users", "user_id", lcUsername) {
+			if db2.DoesExist(db2.DB, "users", "user_id", lcUsername) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
@@ -76,14 +77,15 @@ func StartDiscordBot() {
 
 			var sheets *sheets.Service
 
-			sheets, err = getGoogleSheets()
+			sheets, err = shared.GetGoogleSheets()
 			if err != nil {
 				fmt.Println("❌ Failed to initialize Google Sheets client:", err)
 				return
 			}
-			go createNewSheetWithTitle(sheets, spreadsheetID, i.Member.User.Username)
 
-			err := db.AddUser(db.DB,
+			go shared.CreateNewSheetWithTitle(sheets, shared.SpreadsheetID, i.Member.User.Username)
+
+			err := db2.AddUser(db2.DB,
 				lcUsername,
 				false,
 				0,
@@ -128,7 +130,7 @@ func StartDiscordBot() {
 			}
 
 			// ✅ Check if user exists before proceeding
-			exists := db.DoesExist(db.DB, "users", "discord_user_id", i.Member.User.ID)
+			exists := db2.DoesExist(db2.DB, "users", "discord_user_id", i.Member.User.ID)
 			if !exists {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -140,15 +142,15 @@ func StartDiscordBot() {
 				return
 			}
 
-			db.DeleteUserByDiscordID(db.DB, i.Member.User.ID)
+			db2.DeleteUserByDiscordID(db2.DB, i.Member.User.ID)
 			var sheets *sheets.Service
 
-			sheets, err = getGoogleSheets()
+			sheets, err = shared.GetGoogleSheets()
 			if err != nil {
 				fmt.Println("❌ Failed to initialize Google Sheets client:", err)
 				return
 			}
-			err := deleteSheetByTitle(sheets, spreadsheetID, i.Member.User.Username)
+			err := shared.DeleteSheetByTitle(sheets, shared.SpreadsheetID, i.Member.User.Username)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -163,7 +165,7 @@ func StartDiscordBot() {
 		case "random-leetcode":
 			fmt.Println("Random-Leecoset")
 
-			userID, err := db.GetUserIDwithDiscordID(db.DB, i.Member.User.ID)
+			userID, err := db2.GetUserIDwithDiscordID(db2.DB, i.Member.User.ID)
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -175,7 +177,7 @@ func StartDiscordBot() {
 				return
 			}
 
-			lcURL := db.GetRandomSkewedLeetcode(db.DB, userID)
+			lcURL := db2.GetRandomSkewedLeetcode(db2.DB, userID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

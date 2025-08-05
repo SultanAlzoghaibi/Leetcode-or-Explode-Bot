@@ -1,8 +1,8 @@
 // google_sheets.go
-package bot
+package shared
 
 import (
-	"Leetcode-or-Explode-Bot/db"
+	db2 "Leetcode-or-Explode-Bot/internal/db"
 	"context"
 	"fmt"
 	"log"
@@ -15,7 +15,7 @@ import (
 //TODO: Setup the sheet insially ith the color/pill format to get it to work nicely
 
 // Define spreadsheetID and writeRange globally or pass as needed.
-var spreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ"
+var SpreadsheetID = "1Gc3PhSnLSrlcVSEDtQFiQ-rS-pHjWrgQQ64GFR-dwFQ"
 
 var writeRange = ""
 
@@ -30,7 +30,7 @@ var scoreMap = map[int8]string{
 
 //TODO BATCH ALL OF THESE TO HANDLE 3+ REQUESTS AT ONCE
 
-func getGoogleSheets() (*sheets.Service, error) {
+func GetGoogleSheets() (*sheets.Service, error) {
 	ctx := context.Background()
 	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("credentials.json"))
 	if err != nil {
@@ -39,7 +39,7 @@ func getGoogleSheets() (*sheets.Service, error) {
 	return srv, nil
 }
 
-func addtoSheets(subm Submission) {
+func AddtoSheets(subm Submission) {
 	ctx := context.Background()
 
 	// Create Sheets service using service account credentials
@@ -51,8 +51,8 @@ func addtoSheets(subm Submission) {
 		log.Fatalf("Unable to create Sheets service: %v", err)
 	}
 
-	setDifficultyValidationAndFormatting(srv, spreadsheetID)
-	setConfidenceValidationAndFormatting(srv, spreadsheetID)
+	setDifficultyValidationAndFormatting(srv, SpreadsheetID)
+	setConfidenceValidationAndFormatting(srv, SpreadsheetID)
 
 	// --- Set data validation for "Difficulty" column (column B) ---
 
@@ -78,13 +78,13 @@ func addtoSheets(subm Submission) {
 	// Append to spreadsheet
 	var sheetsName string
 
-	sheetsName, err = db.GetUsernameByUserID(db.DB, subm.UserID)
+	sheetsName, err = db2.GetUsernameByUserID(db2.DB, subm.UserID)
 	if err != nil {
 		log.Fatalf("Unable to get username for submission: %v", err)
 	}
 	writeRange := fmt.Sprintf(sheetsName + "!A2:I")
 
-	_, err = srv.Spreadsheets.Values.Append(spreadsheetID, writeRange, valueRange).
+	_, err = srv.Spreadsheets.Values.Append(SpreadsheetID, writeRange, valueRange).
 		ValueInputOption("USER_ENTERED").
 		Context(ctx).
 		Do()
@@ -290,7 +290,7 @@ func (d Difficulty) String() string {
 }
 
 // createNewSheetWithTitle creates a new sheet with the given title in the specified spreadsheet.
-func createNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) error {
+func CreateNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) error {
 	// Step 1: Create the new sheet
 	_, err := srv.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
 		Requests: []*sheets.Request{
@@ -595,7 +595,7 @@ func createNewSheetWithTitle(srv *sheets.Service, spreadsheetID, title string) e
 }
 
 // deleteSheetByTitle deletes a sheet from the spreadsheet by its title.
-func deleteSheetByTitle(srv *sheets.Service, spreadsheetID, title string) error {
+func DeleteSheetByTitle(srv *sheets.Service, spreadsheetID, title string) error {
 	// First, get spreadsheet metadata to find the sheet ID
 
 	resp, err := srv.Spreadsheets.Get(spreadsheetID).Do()

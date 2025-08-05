@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"Leetcode-or-Explode-Bot/db"
+	"Leetcode-or-Explode-Bot/internal/db"
 	"github.com/DATA-DOG/go-sqlmock"
 	"log"
 	"testing"

@@ -1,14 +1,15 @@
-package bot
+package chrome
 
 import (
-	"Leetcode-or-Explode-Bot/db"
+	"Leetcode-or-Explode-Bot/internal/chrome/cybersec"
+	db2 "Leetcode-or-Explode-Bot/internal/db"
+	"Leetcode-or-Explode-Bot/internal/shared"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 )
 
 type Server struct {
@@ -16,45 +17,6 @@ type Server struct {
 
 type Message struct {
 	Text string `json:"text"`
-}
-
-type Difficulty int8
-
-const (
-	Easy Difficulty = iota
-	Medium
-	Hard
-)
-
-type Submission struct {
-	SubmissionID    string   `json:"submissionId"` // ex: "1696788684"
-	ProblemName     string   `json:"problemName"`  // ex: 1   (Two-Sum)
-	UserID          string   `json:"userID"`       // ex: "7syRMHE2MD"
-	Difficulty      string   `json:"difficulty"`   // "Easy" | "Medium" | "Hard" / ENUM
-	SubmittedAt     string   `json:"submittedAt"`  // ISO-8601 timestamp
-	ConfidenceScore uint8    `json:"confidenceScore"`
-	Notes           string   `json:"notes"`
-	SolveTime       uint8    `json:"duration"`
-	Topics          []string `json:"topics"`
-}
-
-func (d *Difficulty) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-
-	switch strings.ToUpper(s) {
-	case "EASY":
-		*d = Easy
-	case "MEDIUM":
-		*d = Medium
-	case "HARD":
-		*d = Hard
-	default:
-		return fmt.Errorf("invalid difficulty: %s", s)
-	}
-	return nil
 }
 
 func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
@@ -100,9 +62,23 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("📦 Raw body:", string(body))
 
-	var submission Submission
+	var submission shared.Submission
 
 	err = json.Unmarshal(body, &submission)
+	ip := r.RemoteAddr
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		ip = forwarded
+	}
+	if !cybersec.Blackbox(
+		submission,    // from JSON body
+		r.Header,      // all request headers
+		ip,            // extracted client IP
+		http.Client{}, // reusable HTTP client for outbound validation calls
+		r.UserAgent(), // User-Agent string
+		origin,        // CORS origin
+	) {
+		http.Error(w, "Sorry lil bro, no ctf kids cracking this lol", http.StatusForbidden)
+	}
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -112,7 +88,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("✅ Submission received:\n%+v\n", submission)
 
-	database := db.DB
+	database := db2.DB
 
 	subExists, err := tableExists(database, "submissions")
 	if err != nil {
@@ -124,7 +100,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !subExists || !userExists {
-		err := db.SetupDB(database)
+		err := db2.SetupDB(database)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -133,7 +109,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 	//Todo: have a check that if the User is not in the DB, pop up warning is called
 
-	if !db.DoesExist(database, "users", "user_id", submission.UserID) {
+	if !db2.DoesExist(database, "users", "user_id", submission.UserID) {
 		fmt.Println("!db.DoesExist(database, \"submissions\", \"user_id\", submission.UserID)")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("the user has never signed up via our discord bot, contact h82luzn on discord for more information"))
@@ -143,14 +119,14 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Received"))
 
-	if db.SameDaySubm(database, submission.ProblemName, submission.UserID, submission.SubmittedAt) {
+	if db2.SameDaySubm(database, submission.ProblemName, submission.UserID, submission.SubmittedAt) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("the submission already exists today"))
 		fmt.Println("submission was already submited today")
 		return
 	}
 
-	db.AddSubm(database,
+	db2.AddSubm(database,
 		submission.SubmissionID,
 		submission.ProblemName,
 		submission.Difficulty,
@@ -162,17 +138,18 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	//printDB(database)
-	addtoSheets(submission)
+	shared.AddtoSheets(submission)
 
 }
 
 func StartChromeAPIServer() {
+	fmt.Println("StartChromeAPIServer")
 	http.HandleFunc("/api/chrome", lcSubmissionHandler)
 
 	if err := http.ListenAndServe(":9100", nil); err != nil {
 		log.Fatalf("❌ Failed to start Chrome API server: %v", err)
 	}
-	fmt.Println("✅ Chrome API server listening on port 9100")
+
 }
 
 func tableExists(db *sql.DB, tableName string) (bool, error) {

@@ -12,13 +12,21 @@ import (
 var DB *sql.DB // Global exported variable
 
 func Init() {
+	cwd, _ := os.Getwd()
+	fmt.Println("📂 Current working dir:", cwd)
+
 	if os.Getenv("ENV") != "production" {
 		fmt.Println("Loading environment variables from .env file")
-		_ = godotenv.Load() // Only load .env locally
+		if err := godotenv.Load(".env"); err != nil {
+			log.Println("❌ Failed to load .env:", err)
+		} else {
+			fmt.Println("✅ .env file loaded")
+		}
 	}
 	// load the env file from a tmeporatry test file durung tests
 
 	dsn := os.Getenv("DNS_DB")
+	fmt.Println("dns:", dsn)
 
 	fmt.Printf("dsn:", dsn[22:])
 

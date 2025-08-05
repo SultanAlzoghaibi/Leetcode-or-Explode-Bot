@@ -1,8 +1,9 @@
 package main
 
 import (
-	"Leetcode-or-Explode-Bot/bot"
-	"Leetcode-or-Explode-Bot/db"
+	bot2 "Leetcode-or-Explode-Bot/internal/bot"
+	"Leetcode-or-Explode-Bot/internal/chrome"
+	"Leetcode-or-Explode-Bot/internal/db"
 	"database/sql"
 	"fmt"
 	"runtime/debug"
@@ -11,11 +12,10 @@ import (
 var Conn *sql.DB
 
 func main() {
-	fmt.Println("main started")
+	fmt.Println("main chrome started")
 	db.Init()
-	go recoverer(100, 1, bot.StartChromeAPIServer)
-	go recoverer(100, 2, bot.StartDiscordBot)
-
+	go recoverer(50, 1, chrome.StartChromeAPIServer)
+	go recoverer(50, 2, bot2.StartDiscordBot)
 	select {} // cleaner than Sleep for long-running goroutines
 }
 

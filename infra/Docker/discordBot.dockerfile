@@ -9,16 +9,17 @@ RUN go mod download
 
 COPY go/. ./
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o chromeListener ./cmd/chromeListener
-
+# Build the Discord bot binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o discordBot ./cmd/discordBot
 
 # ----- Stage 2: Run -----
 FROM alpine:latest
 WORKDIR /app/
-COPY --from=builder /app/chromeListener .
-RUN chmod +x chromeListener
+
+COPY --from=builder /app/discordBot .
+RUN chmod +x discordBot
 
 COPY go/credentials.json ./credentials.json
 
 EXPOSE 9100
-CMD ["./chromeListener"]
+CMD ["./discordBot"]

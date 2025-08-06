@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
+	"os"
 	"strings"
 	"time"
 	_ "time/tzdata"
@@ -29,7 +30,12 @@ func dailyposts(s *discordgo.Session) {
 			// If it's already past 11:59 PM today, schedule for tomorrow
 			nextRun = nextRun.Add(24 * time.Hour)
 		}
-		sleepDuration := time.Until(nextRun)
+		var sleepDuration time.Duration
+		if os.Getenv("ENV") == "test" {
+			sleepDuration = 24 * time.Second
+		} else {
+			sleepDuration = time.Until(nextRun)
+		}
 		fmt.Printf("😴 Sleeping %v until 11:59 PM daily run at %v\n", sleepDuration, nextRun)
 		time.Sleep(sleepDuration)
 
@@ -40,10 +46,18 @@ func dailyposts(s *discordgo.Session) {
 
 		// ----------- Do daily stuff -----------
 		dailyStats := db2.GetAllDailyLeets(db2.DB, date)
-		fmt.Println("dailyStats: ", dailyStats)
+		var channelDailyLCID, channelLeaderboardID string
 
-		s.ChannelMessageSend("1399588861461659678", DisplayDailylc(dailyStats))
-		s.ChannelMessageSend("1399588897595588638", DisplayLeaderboard(db2.GetLeaderboard(db2.DB)))
+		if os.Getenv("ENV") == "test" {
+			channelDailyLCID = "1395556314951974972"     // test daily LC
+			channelLeaderboardID = "1395556365623234600" // test leaderboard
+		} else {
+			channelDailyLCID = "1399588861461659678"     // prod daily LC
+			channelLeaderboardID = "1399588897595588638" // prod leaderboard
+		}
+		fmt.Println("channels: ", channelDailyLCID, channelLeaderboardID)
+		s.ChannelMessageSend(channelDailyLCID, DisplayDailylc(dailyStats))
+		s.ChannelMessageSend(channelLeaderboardID, DisplayLeaderboard(db2.GetLeaderboard(db2.DB)))
 
 		// Reset monthly LC if month changed
 		if now.Add(1*time.Hour).Day() == 1 {
@@ -93,7 +107,7 @@ func DisplayDailylc(stats []db2.DailyStat) string {
 	var res strings.Builder
 	loc, _ := time.LoadLocation("America/Los_Angeles")
 	now := time.Now().In(loc)
-	res.WriteString(fmt.Sprintf("📅 Day %d — Daily Leetcode Records: \n\n", now))
+	res.WriteString(fmt.Sprintf("📅 Day %d — Daily Leetcode Records: \n\n", now.Day()))
 
 	for _, stat := range stats {
 
@@ -103,6 +117,7 @@ func DisplayDailylc(stats []db2.DailyStat) string {
 			resetStreak(db2.DB, stat.UserID)
 		} else {
 			db2.IncrementStreak(db2.DB, stat.UserID)
+			stat.Streak++
 		}
 
 		res.WriteString(fmt.Sprintf(" %s — **%d** today | **%d** this month:\n", stat.Username, total, stat.MonthlyLC))
@@ -116,7 +131,7 @@ func DisplayDailylc(stats []db2.DailyStat) string {
 			res.WriteString(fmt.Sprintf("  🟥: %d ", stat.Hard))
 		}
 
-		if stat.Streak > 3 {
+		if stat.Streak >= 4 {
 			res.WriteString(fmt.Sprintf(" |  Streak  %d 🔥", stat.Streak))
 		}
 

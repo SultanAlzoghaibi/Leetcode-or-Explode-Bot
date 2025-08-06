@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: green-chromel
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: green-chromel
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: chromel
-          image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/chrome-listener:latest
+          image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/chrome-l:latest
           resources:
             requests:
               memory: "50Mi"

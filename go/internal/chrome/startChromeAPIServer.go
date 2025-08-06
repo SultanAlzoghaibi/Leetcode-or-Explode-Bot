@@ -78,7 +78,9 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		origin,        // CORS origin
 	) {
 		http.Error(w, "Sorry lil bro, no ctf kids cracking this lol", http.StatusForbidden)
+		return
 	}
+	fmt.Println("CYBERPASS")
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -138,7 +140,7 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	//printDB(database)
-	shared.AddtoSheets(submission)
+	//shared.AddtoSheets(submission)
 
 }
 

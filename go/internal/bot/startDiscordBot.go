@@ -264,25 +264,28 @@ func StartDiscordBot() {
 		//	},
 		//},
 	}
-	serverIDs := []string{
-		"1392352918425960509", // old server
-		"1377097284633886771", // new server
+	if os.Getenv("ENV") != "production" {
+		fmt.Println("Loading environment variables from .env file")
+		if err := godotenv.Load(".env"); err != nil {
+			log.Println("❌ Failed to load .env:", err)
+		} else {
+			fmt.Println("✅ .env file loaded")
+		}
 	}
 
-	for _, guildID := range serverIDs {
-		for _, cmd := range commands {
-			_, err := sess.ApplicationCommandCreate(sess.State.User.ID, guildID, cmd)
+	guildID := "1392352918425960509"
 
-			if err != nil {
-				fmt.Printf("❌ Cannot create slash command '%s' in guild %s: %v\n", cmd.Name, guildID, err)
-			}
-		}
-
-		err := sess.GuildMemberNickname(guildID, "@me", "Leetcode Warden 😭")
+	for _, cmd := range commands {
+		_, err := sess.ApplicationCommandCreate(sess.State.User.ID, guildID, cmd)
 		if err != nil {
-			fmt.Printf("❌ Failed to set nickname in guild %s: %v\n", guildID, err)
+			fmt.Printf("❌ Cannot create slash command '%s' in guild %s: %v\n", cmd.Name, guildID, err)
 		}
 	}
+	err = sess.GuildMemberNickname(guildID, "@me", "Leetcode Warden 😭")
+	if err != nil {
+		fmt.Printf("❌ Failed to set nickname in guild %s: %v\n", guildID, err)
+	}
+
 	// --------------------- End of commands -----------------------
 
 	if err != nil {

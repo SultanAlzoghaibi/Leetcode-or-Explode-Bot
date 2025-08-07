@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
 type Server struct {
@@ -107,9 +109,12 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 	}
-	//TODO: pu this into a function as its messy out here
+	//TODO: put this into a function as its messy out here
 
-	//Todo: have a check that if the User is not in the DB, pop up warning is called
+	if !validSubm(submission) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if !db2.DoesExist(database, "users", "user_id", submission.UserID) {
 		fmt.Println("!db.DoesExist(database, \"submissions\", \"user_id\", submission.UserID)")
@@ -140,8 +145,43 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	//printDB(database)
-	//shared.AddtoSheets(submission)
+	shared.AddtoSheets(submission)
 
+}
+
+func validSubm(submission shared.Submission) bool {
+	// ✅ ProblemName must contain at least one dash (e.g. "1234-two-sum")
+	if len(submission.ProblemName) < 5 || !strings.Contains(submission.ProblemName, "-") {
+		fmt.Println("❌ Invalid ProblemName: must be at least 5 characters and contain a dash (e.g. '1234-two-sum')")
+		return false
+	}
+
+	// ✅ ProblemName must follow format like "1234-two-sum"
+	match, _ := regexp.MatchString(`^\d+-[a-zA-Z0-9\-]+$`, submission.ProblemName)
+	if !match {
+		fmt.Println("❌ Invalid ProblemName format: must start with digits followed by a dash and a slug (e.g. '1234-two-sum')")
+		return false
+	}
+
+	// ✅ ConfidenceScore must be between 1 and 10
+	if submission.ConfidenceScore < 0 || submission.ConfidenceScore > 10 {
+		fmt.Println("❌ Invalid ConfidenceScore: must be between 0 and 10")
+		return false
+	}
+
+	// ✅ SubmissionID must be non-empty
+	if strings.TrimSpace(submission.SubmissionID) == "" {
+		fmt.Println("❌ SubmissionID is empty")
+		return false
+	}
+
+	// ✅ SolveTime (duration) must be a positive number (minutes)
+	if submission.SolveTime < 0 {
+		fmt.Println("❌ SolveTime is negative: must be a positive number representing minutes spent")
+		return false
+	}
+
+	return true
 }
 
 func StartChromeAPIServer() {

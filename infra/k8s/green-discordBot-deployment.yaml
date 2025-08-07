@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: green-discordbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: green-discordbot
+  template:
+    metadata:
+      labels:
+        app: green-discordbot
+    spec:
+      containers:
+        - name: discordbot
+          image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/discordbot:latest
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "50m"
+
+          ports:
+            - containerPort: 9100
+          # NEVER for minikube and always for cloud
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: bot-info
+          env:
+            - name: ENV
+              value: "production"
+

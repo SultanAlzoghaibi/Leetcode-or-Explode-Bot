@@ -5,11 +5,11 @@ controller:
       networking.gke.io/load-balancer-ipv4-address: "34.132.166.159"
   resources:
     requests:
-      cpu: 100m
-      memory: 90Mi
+      cpu: 30m
+      memory: 50Mi
     limits:
-      cpu: 200m
-      memory: 128Mi
+      cpu: 100m
+      memory: 100Mi
   admissionWebhooks:
     enabled: false
   metrics:

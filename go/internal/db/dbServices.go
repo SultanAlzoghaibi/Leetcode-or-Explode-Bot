@@ -269,13 +269,13 @@ func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 	date = t.Format("2006-01-02")
 
 	query := `
-		SELECT u.user_id, u.username, s.difficulty, COUNT(*)
-		FROM submissions s
-		JOIN users u ON s.user_id = u.user_id
-		WHERE DATE(s.timestamp) = ?
-		GROUP BY u.user_id, u.username, s.difficulty
-	`
-	//TODO: add steaks to this list incomplete
+	SELECT u.user_id, u.username, COALESCE(s.difficulty, ''), COUNT(s.submission_id) as count_today
+	FROM users u
+	LEFT JOIN submissions s 
+		ON s.user_id = u.user_id 
+		AND DATE(s.timestamp) = ?
+	GROUP BY u.user_id, u.username, s.difficulty;
+`
 
 	rows, err := db.Query(query, date)
 	if err != nil {
@@ -315,6 +315,7 @@ func GetAllDailyLeets(db *sql.DB, date string) []DailyStat {
 			stat.Medium += count
 		case "HARD":
 			stat.Hard += count
+			// difficulty is empty string → user had no submissions today
 		}
 	}
 

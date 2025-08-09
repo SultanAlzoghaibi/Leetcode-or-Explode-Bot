@@ -110,7 +110,6 @@ func DisplayDailylc(stats []db2.DailyStat) string {
 	res.WriteString(fmt.Sprintf("📅 Day %d — Daily Leetcode Records: \n\n", now.Day()))
 
 	for _, stat := range stats {
-
 		total := stat.Easy + stat.Medium + stat.Hard
 
 		if total == 0 {
@@ -118,24 +117,24 @@ func DisplayDailylc(stats []db2.DailyStat) string {
 		} else {
 			db2.IncrementStreak(db2.DB, stat.UserID)
 			stat.Streak++
-		}
+			res.WriteString(fmt.Sprintf(" %s — **%d** today | **%d** this month:\n", stat.Username, total, stat.MonthlyLC))
+			if stat.Easy > 0 {
+				res.WriteString(fmt.Sprintf("  🟩: %d", stat.Easy))
+			}
+			if stat.Medium > 0 {
+				res.WriteString(fmt.Sprintf("  🟨: %d ", stat.Medium))
+			}
+			if stat.Hard > 0 {
+				res.WriteString(fmt.Sprintf("  🟥: %d ", stat.Hard))
+			}
 
-		res.WriteString(fmt.Sprintf(" %s — **%d** today | **%d** this month:\n", stat.Username, total, stat.MonthlyLC))
-		if stat.Easy > 0 {
-			res.WriteString(fmt.Sprintf("  🟩: %d", stat.Easy))
-		}
-		if stat.Medium > 0 {
-			res.WriteString(fmt.Sprintf("  🟨: %d ", stat.Medium))
-		}
-		if stat.Hard > 0 {
-			res.WriteString(fmt.Sprintf("  🟥: %d ", stat.Hard))
-		}
+			if stat.Streak >= 4 {
+				res.WriteString(fmt.Sprintf(" |  Streak  %d 🔥", stat.Streak))
+			}
 
-		if stat.Streak >= 4 {
-			res.WriteString(fmt.Sprintf(" |  Streak  %d 🔥", stat.Streak))
-		}
+			res.WriteString("\n")
 
-		res.WriteString("\n")
+		}
 
 	}
 

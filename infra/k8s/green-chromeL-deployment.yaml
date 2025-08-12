@@ -18,7 +18,7 @@ spec:
           resources:
             requests:
               memory: "50Mi"
-              cpu: "50m"
+              cpu: "30m"
           ports:
             - containerPort: 9100
           # NEVER for minikube and always for cloud

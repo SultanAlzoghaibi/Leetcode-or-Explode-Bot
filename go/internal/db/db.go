@@ -1,12 +1,14 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql" // Required for mysql driver
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"time"
 )
 
 var DB *sql.DB // Global exported variable
@@ -34,21 +36,21 @@ func Init() {
 	if err != nil {
 		log.Fatalf("❌ Failed to open DB: %v", err)
 	}
-	if err := db.Ping(); err != nil {
+
+	// Ping with a short timeout; fail fast if unreachable
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
 		log.Fatalf("❌ Failed to ping DB: %v", err)
 	}
 
-	DB, err = sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatalf("❌ Failed to connect to DB: %v", err)
-	}
+	// Connection pool tuning to avoid stale idle sockets and broken pipes
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxIdleTime(5 * time.Minute)
+	db.SetConnMaxLifetime(30 * time.Minute)
 
-	if err := DB.Ping(); err != nil {
-		log.Fatalf("❌ Ping failed: %v", err)
-	}
-
-	DB.SetMaxOpenConns(20)
-	DB.SetMaxIdleConns(20)
-
+	// Promote to global
+	DB = db
 	log.Println("✅ Connected to DB")
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Server struct {
@@ -145,7 +146,21 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		submission.UserID)
 
 	//printDB(database)
-	shared.AddtoSheets(submission)
+
+	for attempt := 1; attempt <= 3; attempt++ {
+		err = shared.AddtoSheets(submission)
+		if err == nil {
+			break
+		}
+		log.Printf("❌ Attempt %d failed: %v", attempt, err)
+		if attempt < 3 {
+			log.Println("⏳ Retrying...")
+			time.Sleep(2 * time.Second) // small backoff
+		}
+	}
+	if err != nil {
+		log.Printf("❌ Failed after 3 attempts: %v", err)
+	}
 
 }
 

@@ -9,11 +9,13 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/api/sheets/v4"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const prefix = "lcc"
@@ -27,6 +29,11 @@ func StartDiscordBot() {
 
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot
+	if err != nil {
+		log.Printf("discordgo.New failed: %v", err)
+		return
+	}
+	sess.Client = &http.Client{Timeout: 30 * time.Second}
 
 	go dailyposts(sess) // temp oof  undo
 	//TODO: UNDO

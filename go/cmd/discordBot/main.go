@@ -5,6 +5,7 @@ import (
 	"Leetcode-or-Explode-Bot/internal/db"
 	"database/sql"
 	"fmt"
+	"os"
 	"runtime/debug"
 	"time"
 )
@@ -15,9 +16,13 @@ func main() {
 	fmt.Println("main bot star")
 	db.Init()
 
-	go recoverer(3, 2, bot2.StartDiscordBot)
+	recoverer(3, 2, bot2.StartDiscordBot)
 
-	select {} // cleaner than Sleep for long-running goroutines
+	// We crahing the pot'
+	fmt.Println("\n Too many panics, exiting...")
+
+	time.Sleep(2 * time.Second)
+	os.Exit(1)
 }
 
 func recoverer(maxPanics, id int, f func()) {

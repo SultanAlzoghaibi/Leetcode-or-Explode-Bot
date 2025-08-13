@@ -5,6 +5,7 @@ import (
 	"Leetcode-or-Explode-Bot/internal/db"
 	"database/sql"
 	"fmt"
+	"os"
 	"runtime/debug"
 	"time"
 )
@@ -14,8 +15,13 @@ var Conn *sql.DB
 func main() {
 	fmt.Println("main chrome started")
 	db.Init()
-	go recoverer(5, 1, chrome.StartChromeAPIServer)
-	select {} // cleaner than Sleep for long-running goroutines
+	recoverer(5, 1, chrome.StartChromeAPIServer)
+	// cleaner than Sleep for long-running goroutines]
+
+	fmt.Println("\n Too many panics, exiting...")
+
+	time.Sleep(2 * time.Second)
+	os.Exit(1)
 }
 
 func recoverer(maxPanics, id int, f func()) {

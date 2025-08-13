@@ -39,7 +39,7 @@ func GetGoogleSheets() (*sheets.Service, error) {
 	return srv, nil
 }
 
-func AddtoSheets(subm Submission) {
+func AddtoSheets(subm Submission) error {
 	ctx := context.Background()
 
 	// Create Sheets service using service account credentials
@@ -80,7 +80,7 @@ func AddtoSheets(subm Submission) {
 
 	sheetsName, err = db2.GetUsernameByUserID(db2.DB, subm.UserID)
 	if err != nil {
-		log.Fatalf("Unable to get username for submission: %v", err)
+		return fmt.Errorf("Unable to get username for submission: %v", err)
 	}
 	writeRange := fmt.Sprintf(sheetsName + "!A2:I")
 
@@ -89,8 +89,9 @@ func AddtoSheets(subm Submission) {
 		Context(ctx).
 		Do()
 	if err != nil {
-		log.Fatalf("Unable to append data to sheet: %v", err)
+		return fmt.Errorf("unable to append data to sheet: %w", err)
 	}
+	return nil
 }
 
 func setDifficultyValidationAndFormatting(srv *sheets.Service, spreadsheetID string) {

@@ -1,0 +1,13 @@
+syntax = "proto3";
+package monitor;
+option go_package = "Leetcode-or-Explode-Bot/proto/monitor";
+
+message Status {
+  string podName = 1;
+  bool serverStatus = 2; // the number is the ID of the variabels
+  uint32 password = 3;
+}
+
+service MonitorService {
+  rpc SendStatus (Status) returns (Status);
+}

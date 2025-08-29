@@ -38,3 +38,8 @@ infra/terra/info.tfvars
 *tfvars
 infra/k8s/info.yaml
 go/internal/chrome/cybersec
+
+
+# Ignore generated gRPC/protobuf Go files
+proto/*.pb.go
+proto/*_grpc.pb.go

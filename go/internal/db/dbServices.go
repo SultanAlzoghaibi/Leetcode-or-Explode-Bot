@@ -243,6 +243,35 @@ func GetUsernameByUserID(db *sql.DB, userID string) (string, error) {
 	return username, nil
 }
 
+func GetLCFromAllUsersToday(db *sql.DB, date string) (map[string][]string, error) {
+	query := `
+		SELECT u.username, s.problem_name, s.difficulty
+		FROM submissions s
+		JOIN users u ON s.user_id = u.user_id
+		WHERE DATE(s.timestamp) = ?
+		ORDER BY u.username, s.timestamp;
+	`
+
+	rows, err := db.Query(query, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make(map[string][]string)
+
+	for rows.Next() {
+		var username, problemName, difficulty string
+		if err := rows.Scan(&username, &problemName, &difficulty); err != nil {
+			return nil, err
+		}
+		entry := fmt.Sprintf("%s: %s", problemName, difficulty)
+		results[username] = append(results[username], entry)
+	}
+
+	return results, nil
+}
+
 func GetUserIDwithDiscordID(db *sql.DB, discordUserID string) (string, error) {
 	query := `SELECT user_id FROM users WHERE discord_user_id = ?`
 

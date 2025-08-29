@@ -201,6 +201,26 @@ func StartDiscordBot() {
 					Content: "comming SOON",
 				},
 			})
+
+		case "stalk":
+			loc, _ := time.LoadLocation("America/Los_Angeles")
+			date := time.Now().In(loc).Format("2006-01-02")
+
+			dailyInfoMap, err := db2.GetLCFromAllUsersToday(db2.DB, date)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			report := BuildDailyReport(dailyInfoMap)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: report,
+				},
+			})
+
 		}
 
 		// TODO: Add a lockup to leetcode site (or api) to see if this user exists or not
@@ -247,6 +267,10 @@ func StartDiscordBot() {
 		{
 			Name:        "random-leetcode",
 			Description: "Get a radome Leetcode with skewed probability in favour of least confident past Leetcodes",
+		},
+		{
+			Name:        "stalk",
+			Description: "Get a list of everyone's solved Leetcode questions solved today",
 		},
 		//{
 		//	Name:        "status",
@@ -327,4 +351,40 @@ func resetStreak(db *sql.DB, userID string) {
 		log.Println("Error resetting streak:", err)
 	}
 
+}
+
+func difficultyToEmoji(diff string) string {
+	switch diff {
+	case "EASY":
+		return "🟩" // green square
+	case "MEDIUM":
+		return "🟨" // yellow square
+	case "HARD":
+		return "🟥" // red square
+	default:
+		return "⬜" // fallback
+	}
+}
+
+func BuildDailyReport(dailyInfoMap map[string][]string) string {
+	var sb strings.Builder
+
+	for username, entries := range dailyInfoMap {
+		sb.WriteString(fmt.Sprintf("**%s**:\n", username)) // bold Discord username
+		for _, entry := range entries {
+			// entry comes as "ProblemName: DIFFICULTY"
+			parts := strings.SplitN(entry, ":", 2)
+			if len(parts) == 2 {
+				problem := strings.TrimSpace(parts[0])
+				diff := strings.TrimSpace(parts[1])
+				emoji := difficultyToEmoji(strings.ToUpper(diff))
+				sb.WriteString(fmt.Sprintf("   %s %s\n", problem, emoji))
+			} else {
+				// fallback if formatting is off
+				sb.WriteString("   " + entry + "\n")
+			}
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
 }

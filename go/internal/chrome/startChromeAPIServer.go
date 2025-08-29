@@ -1,6 +1,7 @@
 package chrome
 
 import (
+	"Leetcode-or-Explode-Bot/internal/chrome/cybersec"
 	db2 "Leetcode-or-Explode-Bot/internal/db"
 	"Leetcode-or-Explode-Bot/internal/shared"
 	"database/sql"
@@ -67,22 +68,22 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	var submission shared.Submission
 
 	err = json.Unmarshal(body, &submission)
-	//ip := r.RemoteAddr
-	//if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-	//	ip = forwarded
-	//}
+	ip := r.RemoteAddr
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		ip = forwarded
+	}
 
-	//if !cybersec.Blackbox(
-	//	submission,    // from JSON body
-	//	r.Header,      // all request headers
-	//	ip,            // extracted client IP
-	//	http.Client{}, // reusable HTTP client for outbound validation calls
-	//	r.UserAgent(), // User-Agent string
-	//	origin,        // CORS origin
-	//) {
-	//	http.Error(w, "Sorry lil bro, no ctf kids cracking this lol", http.StatusForbidden)
-	//	return
-	//}
+	if !cybersec.Blackbox(
+		submission,    // from JSON body
+		r.Header,      // all request headers
+		ip,            // extracted client IP
+		http.Client{}, // reusable HTTP client for outbound validation calls
+		r.UserAgent(), // User-Agent string
+		origin,        // CORS origin
+	) {
+		http.Error(w, "Sorry lil bro, no ctf kids cracking this lol", http.StatusForbidden)
+		return
+	}
 	fmt.Println("CYBERPASS")
 
 	if err != nil {

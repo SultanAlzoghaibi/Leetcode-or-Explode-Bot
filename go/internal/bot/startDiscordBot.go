@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -218,6 +219,7 @@ func StartDiscordBot() {
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: report,
+					Flags:   1 << 6, // ephemeral message
 				},
 			})
 
@@ -304,7 +306,12 @@ func StartDiscordBot() {
 		}
 	}
 
-	guildID := "1392352918425960509"
+	var guildID string
+	if os.Getenv("ENV") == "production" {
+		guildID = "1377097284633886771"
+	} else {
+		guildID = "1392352918425960509"
+	}
 
 	for _, cmd := range commands {
 		_, err := sess.ApplicationCommandCreate(sess.State.User.ID, guildID, cmd)
@@ -368,11 +375,33 @@ func difficultyToEmoji(diff string) string {
 
 func BuildDailyReport(dailyInfoMap map[string][]string) string {
 	var sb strings.Builder
+	if len(dailyInfoMap) == 0 {
+		return "⚠️ No one solved any LeetCode problems today. BE THE FIRST 🥇"
+	}
 
-	for username, entries := range dailyInfoMap {
-		sb.WriteString(fmt.Sprintf("**%s**:\n", username)) // bold Discord username
+	// Step 1: build a slice of usernames with counts
+	type userCount struct {
+		username string
+		count    int
+	}
+	var counts []userCount
+	for u, entries := range dailyInfoMap {
+		counts = append(counts, userCount{username: u, count: len(entries)})
+	}
+
+	// Step 2: sort by descending count
+	sort.Slice(counts, func(i, j int) bool {
+		if counts[i].count == counts[j].count {
+			return counts[i].username < counts[j].username // tie-breaker: alphabetical
+		}
+		return counts[i].count > counts[j].count
+	})
+
+	// Step 3: render the report
+	for _, uc := range counts {
+		entries := dailyInfoMap[uc.username]
+		sb.WriteString(fmt.Sprintf("**%s** (%d solved):\n", uc.username, uc.count))
 		for _, entry := range entries {
-			// entry comes as "ProblemName: DIFFICULTY"
 			parts := strings.SplitN(entry, ":", 2)
 			if len(parts) == 2 {
 				problem := strings.TrimSpace(parts[0])
@@ -380,11 +409,11 @@ func BuildDailyReport(dailyInfoMap map[string][]string) string {
 				emoji := difficultyToEmoji(strings.ToUpper(diff))
 				sb.WriteString(fmt.Sprintf("   %s %s\n", problem, emoji))
 			} else {
-				// fallback if formatting is off
 				sb.WriteString("   " + entry + "\n")
 			}
 		}
 		sb.WriteString("\n")
 	}
+
 	return sb.String()
 }

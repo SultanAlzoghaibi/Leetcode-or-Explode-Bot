@@ -341,6 +341,23 @@ func StartDiscordBot() {
 
 }
 
+// SendDirectMessage sends a DM to a specific Discord user by ID.
+func SendDirectMessage(s *discordgo.Session, userID, message string) error {
+	// Create (or fetch) a DM channel with the user
+	channel, err := s.UserChannelCreate(userID)
+	if err != nil {
+		return fmt.Errorf("failed to create DM channel with user %s: %w", userID, err)
+	}
+
+	// Send the message into the DM channel
+	_, err = s.ChannelMessageSend(channel.ID, message)
+	if err != nil {
+		return fmt.Errorf("failed to send DM to user %s: %w", userID, err)
+	}
+
+	return nil
+}
+
 //todo: fix bug on first submission being error every time
 
 // TODO: Add a stat strater with telemary (aksii art wort comes to worse)

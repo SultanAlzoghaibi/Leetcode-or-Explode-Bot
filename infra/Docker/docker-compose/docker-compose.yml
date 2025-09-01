@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"                # expose NGINX on your VM’s port 80
+    volumes:
+      # (optional) serve static files from a local folder
+      - ./infra/nginx/static:/usr/share/nginx/html:ro
+      # (optional) custom nginx vhost config if you want one
+      # - ./infra/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - chromeL                # start after chromeL (for convenience)
+    restart: unless-stopped
+
+  chromeL:
+    image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/chrome-l:latest
+    container_name: chromeL
+    ports:
+      - "9100:9100"            # expose the Chrome listener API on host: 9100
+    environment:
+      - ENV=production
+      # put these in a .env file (same dir) so they aren’t hardcoded
+      - DB_DSN=${DB_DSN}
+    restart: unless-stopped
+
+  discordbot:
+    image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/discordbot:latest
+    container_name: discordbot
+    environment:
+      - ENV=production
+      - DISCORD_TOKEN=${DISCORD_TOKEN}  # from .env
+    # No ports: Discord connects out to Discord’s gateway, it doesn’t serve HTTP
+    restart: unless-stopped

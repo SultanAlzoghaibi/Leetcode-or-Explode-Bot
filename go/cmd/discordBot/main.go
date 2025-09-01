@@ -15,12 +15,9 @@ var Conn *sql.DB
 func main() {
 	fmt.Println("main bot star")
 	db.Init()
-
 	recoverer(3, 2, bot2.StartDiscordBot)
-
-	// We crahing the pot'
+	// We crahing on purpose'
 	fmt.Println("\n Too many panics, exiting...")
-
 	time.Sleep(2 * time.Second)
 	os.Exit(1)
 }

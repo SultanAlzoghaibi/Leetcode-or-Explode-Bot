@@ -8,7 +8,7 @@ const submittedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.g
 const submissionId = Math.floor(1000000000 + Math.random() * 9000000000).toString();
 
 const data = {
-    userID: "7syRMHE2MD",
+    userID: "7syRMHW2LD",
     submissionId: submissionId,
     problemName: "0001-two-sum",
     difficulty: "MEDIUM",

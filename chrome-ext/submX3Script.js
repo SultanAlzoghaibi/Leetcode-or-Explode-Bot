@@ -9,7 +9,7 @@ const baseSubmissionId = Math.floor(1000000000 + Math.random() * 9000000000);
 
 const submissions = [
     {
-        userID: "7syRMHE2MD",
+        userID: "7syRMHW2LD",
         submissionId: (baseSubmissionId + 1).toString(),
         problemName: "0001-two-sum",
         difficulty: "EASY",
@@ -20,7 +20,7 @@ const submissions = [
         topics: ["Array"]
     },
     {
-        userID: "7syRMHE2MD",
+        userID: "7syRMHW2LD",
         submissionId: (baseSubmissionId + 2).toString(),
         problemName: "0002-add-two-numbers",
         difficulty: "MEDIUM",
@@ -31,7 +31,7 @@ const submissions = [
         topics: ["Linked List"]
     },
     {
-        userID: "7syRMHE2MD",
+        userID: "7syRMHW2LD",
         submissionId: (baseSubmissionId + 3).toString(),
         problemName: "0042-trapping-rain-water",
         difficulty: "HARD",

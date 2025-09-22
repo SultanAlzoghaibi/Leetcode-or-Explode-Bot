@@ -4,6 +4,8 @@ A powerful duo: a **Chrome Extension** and a **Discord Bot** working together to
 
 ---
 
+
+
 ## 🎯 What Is This?
 
 **Leetcode-or-Explode**
@@ -14,6 +16,7 @@ It consists of:
 - 🤖 A **Discord Bot** that logs, tracks, and summarizes your activity
 
 Together, they automate everything from reflection to reporting and allow fellows devs to see your time and effort put in
+https://youtu.be/wxvHFgnKJ-4
 
 ---
 
@@ -31,15 +34,16 @@ Together, they automate everything from reflection to reporting and allow fellow
     - Tracks your monthly LeetCode count
     - Stores submissions in the database
     - Posts a **daily summary** of your team's progress in `#daily-records`
-- - -
-
-## 🌟 Planned / Optional Features
 
 - 🏆 **Monthly Leaderboard**  
   Track who's staying consistent — not just grinding.
 
 - 🔁 **"Unconfident" Submission Quizzes**  
   The bot can DM you random past submissions you marked low-confidence.
+- - -
+
+## 🌟 Planned / Optional Features
+
 
 - 🔔 **Reminders / Nudges**  
   From either the bot or the extension (opt-in).

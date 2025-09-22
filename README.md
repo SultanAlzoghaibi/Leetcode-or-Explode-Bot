@@ -15,9 +15,8 @@ It consists of:
 - ⚙️ A **Backend** that populates your Google sheets page and stores your history into our DB
 - 🤖 A **Discord Bot** that logs, tracks, and summarizes your activity
 
-Together, they automate everything from reflection to reporting and allow fellows devs to see your time and effort put in
-https://youtu.be/wxvHFgnKJ-4
-
+Together, these tools automate everything from reflection to reporting, making it easy for fellow developers to see the time and effort you’ve invested.  
+🎥 Demo: [Watch on YouTube](https://youtu.be/wxvHFgnKJ-4)
 ---
 
 ## 🧪 MVP Features

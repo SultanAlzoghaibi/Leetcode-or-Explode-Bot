@@ -23,6 +23,7 @@ func dailyposts(s *discordgo.Session) {
 	}
 
 	for {
+
 		// ----------- Sleep until 11:59 PM -----------
 		now := time.Now().In(loc)
 		nextRun := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 0, 0, loc)
@@ -60,9 +61,12 @@ func dailyposts(s *discordgo.Session) {
 		s.ChannelMessageSend(channelLeaderboardID, DisplayLeaderboard(db2.GetLeaderboard(db2.DB)))
 
 		// Reset monthly LC if month changed
-		if now.Add(1*time.Hour).Day() == 1 {
-			db2.ResetMoLCA(db2.DB)
-		}
+		/*
+			if runDate.AddDate(0, 0, 1).Day() == 1 {
+				log.Println("🔄 Month rollover detected — resetting monthly LC counters.")
+				db2.ResetMoLCA(db2.DB)
+			}
+		*/
 	}
 }
 
@@ -91,13 +95,15 @@ func DisplayLeaderboard(leaderboard []db2.LeaderEntry) string {
 	res.WriteString("📊 Daily Leaderboard:\n")
 
 	for i, entry := range leaderboard {
-		var rank string
-		if i < len(emojis) {
-			rank = emojis[i]
-		} else {
-			rank = fmt.Sprintf("%d.", i+1)
+		if entry.MoLCAmount > 0 {
+			var rank string
+			if i < len(emojis) {
+				rank = emojis[i]
+			} else {
+				rank = fmt.Sprintf("%d.", i+1)
+			}
+			res.WriteString(fmt.Sprintf("%s %s — %d\n", rank, entry.Username, entry.MoLCAmount))
 		}
-		res.WriteString(fmt.Sprintf("%s %s — %d\n", rank, entry.Username, entry.MoLCAmount))
 	}
 
 	return res.String()

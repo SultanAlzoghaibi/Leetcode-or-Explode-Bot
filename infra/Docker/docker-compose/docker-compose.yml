@@ -8,7 +8,8 @@ services:
       - "443:443"
     volumes:
       - ./default.conf:/etc/nginx/conf.d/default.conf:ro
-    network_mode: bridge
+      - ./leetcode-or-explode.crt:/etc/ssl/certs/leetcode-or-explode.crt:ro
+      - ./leetcode-or-explode.key:/etc/ssl/private/leetcode-or-explode.key:ro
     depends_on:
       - chromeL
     restart: unless-stopped
@@ -16,7 +17,8 @@ services:
   chromeL:
     image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/chrome-l:latest
     container_name: chromeL
-    network_mode: "host"
+    ports:
+      - "9100:9100"
     volumes:
       - ./.env:/app/.env
     environment:

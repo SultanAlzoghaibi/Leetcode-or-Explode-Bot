@@ -8,7 +8,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("📦 background: received POST_SUBMISSION", message.data);
     console.log("Extension ID:", chrome.runtime.id);
    //todo set to  https://leetcode-or-explode.com/api/chrome
-  fetch("https://c5ef653f405d.ngrok.app/api/chrome", {
+
+  fetch("https://34.170.46.132/api/chrome", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message.data)

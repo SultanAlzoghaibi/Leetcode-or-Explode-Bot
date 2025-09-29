@@ -1,6 +1,7 @@
 package chrome
 
 import (
+	"Leetcode-or-Explode-Bot/internal/chrome/cybersec"
 	db2 "Leetcode-or-Explode-Bot/internal/db"
 	"Leetcode-or-Explode-Bot/internal/shared"
 	"database/sql"
@@ -67,29 +68,29 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	var submission shared.Submission
 
 	err = json.Unmarshal(body, &submission)
-	//ip := r.RemoteAddr
-	//if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-	//	ip = forwarded
-	//}
-	//
-	//if !cybersec.Blackbox(
-	//	submission,    // from JSON body
-	//	r.Header,      // all request headers
-	//	ip,            // extracted client IP
-	//	http.Client{}, // reusable HTTP client for outbound validation calls
-	//	r.UserAgent(), // User-Agent string
-	//	origin,        // CORS origin
-	//) {
-	//	http.Error(w, "Sorry lil bro, no ctf kids cracking this lol", http.StatusForbidden)
-	//	return
-	//}
-	//fmt.Println("CYBERPASS")
-	//
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
+	ip := r.RemoteAddr
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		ip = forwarded
+	}
+
+	if !cybersec.Blackbox(
+		submission,    // from JSON body
+		r.Header,      // all request headers
+		ip,            // extracted client IP
+		http.Client{}, // reusable HTTP client for outbound validation calls
+		r.UserAgent(), // User-Agent string
+		origin,        // CORS origin
+	) {
+		http.Error(w, "Sorry lil bro, no ctf kids cracking this lol", http.StatusForbidden)
+		return
+	}
+	fmt.Println("CYBERPASS")
+
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	fmt.Printf("✅ Submission received:\n%+v\n", submission)
 
@@ -113,24 +114,33 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 	//TODO: put this into a function as its messy out here
 
 	if !validSubm(submission) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "error",
+			"message": "invalid submission",
+		})
 		return
 	}
 
 	if !db2.DoesExist(database, "users", "user_id", submission.UserID) {
-		fmt.Println("!db.DoesExist(database, \"submissions\", \"user_id\", submission.UserID)")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("the user has never signed up via our discord bot, contact h82luzn on discord for more information"))
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "error",
+			"message": "user never signed up via discord",
+		})
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Received"))
+	// SUCESS
 
 	if db2.SameDaySubm(database, submission.ProblemName, submission.UserID, submission.SubmittedAt) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("the submission already exists today"))
-		fmt.Println("submission was already submited today")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "error",
+			"message": "submission already exists today",
+		})
 		return
 	}
 
@@ -158,10 +168,21 @@ func lcSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(2 * time.Second) // small backoff
 		}
 	}
+
 	if err != nil {
 		log.Printf("❌ Failed after 3 attempts: %v", err)
 	}
+	// SUCESS
+	fmt.Println("return")
 
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "ok",
+		"message": "submission received",
+	})
+	//w.WriteHeader(http.StatusOK)
+	//w.Write([]byte("Received"))
 }
 
 func validSubm(submission shared.Submission) bool {

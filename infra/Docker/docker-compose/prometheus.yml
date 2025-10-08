@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'chromeL'
+    static_configs:
+      - targets: ['chromeL:9100']

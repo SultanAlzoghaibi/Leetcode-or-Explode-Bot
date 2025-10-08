@@ -16,9 +16,8 @@ services:
 
   chromeL:
     image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/chrome-l:latest
-    container_name: chromeL
-    ports:
-      - "9100:9100"
+    expose:
+      - "9100"
     volumes:
       - ./.env:/app/.env
     environment:
@@ -30,7 +29,8 @@ services:
   discordbot:
     image: us-central1-docker.pkg.dev/lcc-backend/lcc-backend/discordbot:latest
     container_name: discordbot
-    network_mode: "host"
+    ports:
+      - "9200:9200"
     volumes:
       - ./.env:/app/.env
     environment:
@@ -38,4 +38,13 @@ services:
       - DNS_DB=${DNS_DB}
       - DISCORD_TOKEN=${DISCORD_TOKEN}
 
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.1.0
+    container_name: grafana-alloy
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy
+    environment:
+      - ALLOY_CONFIG_FILE=/etc/alloy/config.alloy
     restart: unless-stopped

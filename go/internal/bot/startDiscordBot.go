@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/api/sheets/v4"
 	"log"
 	"net/http"
@@ -27,6 +28,13 @@ type Command struct {
 func StartDiscordBot() {
 	godotenv.Load()
 	discToken := os.Getenv("DISCORD_TOKEN")
+	go func() {
+		log.Println("/metrics started 9200")
+		http.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(":9200", nil); err != nil {
+			log.Fatalf("Failed \"/metrics\": %v", err)
+		}
+	}()
 
 	fmt.Println("token:" + discToken)
 	sess, err := discordgo.New("Bot " + discToken) // I think this turn on the bot

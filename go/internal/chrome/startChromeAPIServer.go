@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -221,6 +222,16 @@ func validSubm(submission shared.Submission) bool {
 
 func StartChromeAPIServer() {
 	fmt.Println("StartChromeAPIServer")
+	go func() {
+		log.Println("/metrics started")
+		http.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(":9090", nil); err != nil {
+			log.Fatalf(" Failed \"/metrics: %v", err)
+		}
+
+	}()
+
+	// Main API server
 	http.HandleFunc("/api/chrome", lcSubmissionHandler)
 
 	if err := http.ListenAndServe(":9100", nil); err != nil {
